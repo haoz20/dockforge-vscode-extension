@@ -13,7 +13,7 @@
         {
           "id": "dockforge",
           "title": "DockForge",
-          "icon": "resources/dockforge-icon.svg"
+          "icon": "assets/example-logo.png"
         }
       ]
     },
@@ -21,7 +21,8 @@
       "dockforge": [
         {
           "id": "dockforge-dockerfilesview",
-          "name": "Build Dockerfiles"
+          "name": "Build Dockerfiles",
+          "type": "webview"
         },
         {
           "id": "dockforge-dockerhub",
