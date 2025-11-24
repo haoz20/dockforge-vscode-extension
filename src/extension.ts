@@ -1,12 +1,12 @@
 import { commands, ExtensionContext } from "vscode";
-import { HelloWorldPanel } from "./panels/HelloWorldPanel";
+import { DockForgePanel } from "./panels/DockForgePanel";
 
 export function activate(context: ExtensionContext) {
-  // Create the show hello world command
-  const showHelloWorldCommand = commands.registerCommand("hello-world.showHelloWorld", () => {
-    HelloWorldPanel.render(context.extensionUri);
+  // Create the show DockForge command
+  const showDockForgeCommand = commands.registerCommand("dockforge.showDockForge", () => {
+    DockForgePanel.render(context.extensionUri);
   });
 
   // Add command to the extension context
-  context.subscriptions.push(showHelloWorldCommand);
+  context.subscriptions.push(showDockForgeCommand);
 }
