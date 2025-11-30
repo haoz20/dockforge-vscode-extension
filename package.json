@@ -1,17 +1,40 @@
 {
-  "name": "hello-world-react-vite",
-  "displayName": "hello-world-react-vite",
-  "description": "A hello world sample extension to demonstrate using React + Vite with the Webview UI Toolkit for VS Code.",
+  "name": "dockforge",
+  "displayName": "DockForge",
+  "description": "A VS Code extension for Docker and DevContainer management with React + Vite and the Webview UI Toolkit.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.75.0"
   },
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "dockforge",
+          "title": "DockForge",
+          "icon": "assets/example-logo.png"
+        }
+      ]
+    },
+    "views": {
+      "dockforge": [
+        {
+          "id": "dockforge-dockerfilesview",
+          "name": "Build Dockerfiles",
+          "type": "webview"
+        },
+        {
+          "id": "dockforge-dockerhub",
+          "name": "Docker Hub"
+        }
+      ]
+    },
+
     "commands": [
       {
-        "command": "hello-world.showHelloWorld",
-        "title": "Hello World (React + Vite): Show"
+        "command": "dockforge.showDockForge",
+        "title": "DockForge: Show"
       }
     ]
   },
