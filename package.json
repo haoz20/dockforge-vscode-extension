@@ -22,8 +22,7 @@
       "dockforge": [
         {
           "id": "dockforge-dockerfilesview",
-          "name": "Build Dockerfiles",
-          "type": "webview"
+          "name": "Build Dockerfiles"
         },
         {
           "id": "dockforge-dockerhub",
