@@ -32,10 +32,34 @@
 
     "commands": [
       {
-        "command": "dockforge.showDockForge",
-        "title": "DockForge: Show"
+        "command": "dockforge.openDockerfileBuilder",
+        "title": "DockForge: Open Dockerfile Builder"
+      },
+      {
+        "command": "dockforge.refreshDockerfiles",
+        "title": "Refresh Dockerfiles",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "dockforge.newDockerfile",
+        "title": "Create New Dockerfile",
+        "icon": "$(add)"
       }
-    ]
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "dockforge.refreshDockerfiles",
+          "when": "view == dockforge-dockerfilesview",
+          "group": "navigation"
+        },
+        {
+          "command": "dockforge.newDockerfile",
+          "when": "view == dockforge-dockerfilesview",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "install:all": "npm install && cd webview-ui && npm install",
