@@ -20,7 +20,6 @@ interface StageCardProps {
   onDelete: (id: string) => void;
 }
 
-// const commandOptions = ["RUN", "COPY", "WORKDIR", "ENV", "EXPOSE", "CMD"];
 
 const commandOptions = [
   "ADD",
