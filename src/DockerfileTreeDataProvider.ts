@@ -102,4 +102,3 @@ export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<Docke
     }
   }
 }
-
