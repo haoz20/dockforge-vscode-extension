@@ -32,12 +32,18 @@ export function validateDockerfile(stages: StageData[]): ValidationResult {
 
     // Detect COPY before WORKDIR
     let hasWorkdir = false;
+    let copyBeforeWorkdirWarned = false;
     for (const cmd of stage.commands) {
       if (cmd.type === "WORKDIR") hasWorkdir = true;
-      if (!hasWorkdir && (cmd.type === "COPY" || cmd.type === "ADD")) {
+      if (
+        !hasWorkdir &&
+        (cmd.type === "COPY" || cmd.type === "ADD") &&
+        !copyBeforeWorkdirWarned
+      ) {
         warnings.push(
           `Stage ${stageNum}: COPY/ADD before WORKDIR may copy files to unexpected locations`
         );
+        copyBeforeWorkdirWarned = true;
       }
     }
 
