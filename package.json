@@ -54,6 +54,10 @@
         "command": "dockforge.deleteDockerfile",
         "title": "DockForge: Delete Dockerfile",
         "icon": "$(trash)"
+      },
+      {
+        "command": "dockforge.showDockForge",
+        "title": "DockForge: Show DockForge"
       }
     ],
     "menus": {
