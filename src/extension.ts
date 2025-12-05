@@ -47,23 +47,16 @@ export function activate(context: ExtensionContext) {
   });
 
   // Delete Dockerfile command
-  const deleteDockerfileCommand = commands.registerCommand(
-    "dockforge.deleteDockerfile",
-    (treeItem: any) => {
-      if (treeItem && treeItem.label) {
-        try {
-          dockerfileTreeDataProvider.removeDockerfile(treeItem.label);
-          window.showInformationMessage(`Deleted: ${treeItem.label}`);
-        } catch (error) {
-          window.showErrorMessage(
-            `Failed to delete ${treeItem.label}: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
-        }
+  const deleteDockerfileCommand = commands.registerCommand("dockforge.deleteDockerfile", (treeItem: any) => {
+    if (treeItem && treeItem.label) {
+      try {
+        dockerfileTreeDataProvider.removeDockerfile(treeItem.label);
+        window.showInformationMessage(`Deleted: ${treeItem.label}`);
+      } catch (error) {
+        window.showErrorMessage(`Failed to delete: ${treeItem.label}. ${error instanceof Error ? error.message : String(error)}`);
       }
     }
-  );
+  });
 
   // Add Create New Dockerfile command
   const newDockerfileCommand = commands.registerCommand("dockforge.newDockerfile", async () => {
