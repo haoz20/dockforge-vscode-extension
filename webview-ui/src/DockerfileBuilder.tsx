@@ -1,289 +1,68 @@
-import { useState } from "react";
-import { VSCodeButton, VSCodeTextField, VSCodeDropdown, VSCodeOption, VSCodeTextArea } from "@vscode/webview-ui-toolkit/react";
-import "./DockerfileBuilder.css";
-
-interface Stage {
-  id: number;
-  name: string;
-  baseImage: string;
-  customBaseImage: string;
-  commands: Command[];
-}
-
-interface Command {
-  id: number;
-  type: string;
-  value: string;
-}
-
 function DockerfileBuilder() {
-  const [stages, setStages] = useState<Stage[]>([
-    {
-      id: 1,
-      name: "",
-      baseImage: "",
-      customBaseImage: "",
-      commands: []
-    }
-  ]);
-  const [imageName, setImageName] = useState("my-app");
-  const [tag, setTag] = useState("latest");
-  const [containerName, setContainerName] = useState("Auto-generated");
-  const [portMapping, setPortMapping] = useState("8080:80");
-
-  const addStage = () => {
-    const newStage: Stage = {
-      id: stages.length + 1,
-      name: "",
-      baseImage: "",
-      customBaseImage: "",
-      commands: []
-    };
-    setStages([...stages, newStage]);
-  };
-
-  const addCommand = (stageId: number) => {
-    setStages(stages.map(stage => {
-      if (stage.id === stageId) {
-        return {
-          ...stage,
-          commands: [...stage.commands, { id: stage.commands.length + 1, type: "RUN", value: "" }]
-        };
-      }
-      return stage;
-    }));
-  };
-
-  const updateStageBaseImage = (stageId: number, value: string) => {
-    setStages(stages.map(stage => {
-      if (stage.id === stageId) {
-        return { ...stage, baseImage: value };
-      }
-      return stage;
-    }));
-  };
-
-  const updateStageCustomBaseImage = (stageId: number, value: string) => {
-    setStages(stages.map(stage => {
-      if (stage.id === stageId) {
-        return { ...stage, customBaseImage: value };
-      }
-      return stage;
-    }));
-  };
-
-  const updateStageName = (stageId: number, value: string) => {
-    setStages(stages.map(stage => {
-      if (stage.id === stageId) {
-        return { ...stage, name: value };
-      }
-      return stage;
-    }));
-  };
-
-  const hasValidationError = stages.some(stage => !stage.baseImage && !stage.customBaseImage);
-
   return (
-    <div className="dockerfile-builder">
-      <div className="builder-header">
-        <h1>Dockerfile Builder</h1>
-        <VSCodeButton onClick={addStage}>
-          <span className="codicon codicon-layers"></span> Add Stage
-        </VSCodeButton>
-      </div>
-
-      <div className="builder-content">
-        {stages.map((stage, index) => (
-          <div key={stage.id} className="stage-card">
-            <div className="stage-header">
-              <span className="codicon codicon-layers"></span>
-              <h2>Stage {index + 1}</h2>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor={`base-image-${stage.id}`}>
-                Base Image <span className="required">*</span>
-              </label>
-              <VSCodeDropdown
-                id={`base-image-${stage.id}`}
-                value={stage.baseImage}
-                onChange={(e: any) => updateStageBaseImage(stage.id, e.target.value)}
-              >
-                <VSCodeOption value="">Select a base image...</VSCodeOption>
-                {/* <VSCodeOption value="node:18-alpine">node:18-alpine</VSCodeOption>
-                <VSCodeOption value="python:3.11-slim">python:3.11-slim</VSCodeOption>
-                <VSCodeOption value="nginx:alpine">nginx:alpine</VSCodeOption>
-                <VSCodeOption value="golang:1.21-alpine">golang:1.21-alpine</VSCodeOption>
-                <VSCodeOption value="openjdk:17-slim">openjdk:17-slim</VSCodeOption>
-                <VSCodeOption value="ubuntu:22.04">ubuntu:22.04</VSCodeOption>
-                <VSCodeOption value="alpine:latest">alpine:latest</VSCodeOption> */}
-              </VSCodeDropdown>
-              <VSCodeTextField
-                placeholder="Enter custom base image (e.g., myimage:tag)"
-                value={stage.customBaseImage}
-                onInput={(e: any) => updateStageCustomBaseImage(stage.id, e.target.value)}
-                style={{ marginTop: '8px' }}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor={`stage-name-${stage.id}`}>
-                Stage Name <span className="optional">(optional)</span>
-              </label>
-              <VSCodeTextField
-                id={`stage-name-${stage.id}`}
-                placeholder="e.g., builder, dependencies, production"
-                value={stage.name}
-                onInput={(e: any) => updateStageName(stage.id, e.target.value)}
-              />
-              <div className="hint">Use with COPY --from=stagename to reference this stage</div>
-            </div>
-
-            <div className="form-group">
-              <div className="commands-header">
-                <label>Commands</label>
-                <VSCodeButton appearance="secondary" onClick={() => addCommand(stage.id)}>
-                  <span className="codicon codicon-add"></span> Add Command
-                </VSCodeButton>
-              </div>
-              {stage.commands.length === 0 ? (
-                <div className="empty-state">
-                  No commands added yet. Click "Add Command" to start.
-                </div>
-              ) : (
-                <div className="commands-list">
-                  {stage.commands.map(cmd => (
-                    <div key={cmd.id} className="command-item">
-                      <VSCodeDropdown value={cmd.type}>
-                        <VSCodeOption value="RUN">RUN</VSCodeOption>
-                        <VSCodeOption value="COPY">COPY</VSCodeOption>
-                        <VSCodeOption value="ADD">ADD</VSCodeOption>
-                        <VSCodeOption value="WORKDIR">WORKDIR</VSCodeOption>
-                        <VSCodeOption value="ENV">ENV</VSCodeOption>
-                        <VSCodeOption value="EXPOSE">EXPOSE</VSCodeOption>
-                        <VSCodeOption value="CMD">CMD</VSCodeOption>
-                        <VSCodeOption value="ENTRYPOINT">ENTRYPOINT</VSCodeOption>
-                      </VSCodeDropdown>
-                      <VSCodeTextField placeholder="Command value" />
-                      <VSCodeButton appearance="icon">
-                        <span className="codicon codicon-trash"></span>
-                      </VSCodeButton>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="stage-actions">
-              <VSCodeButton appearance="secondary">
-                <span className="codicon codicon-insert"></span> Insert to Workspace
-              </VSCodeButton>
-              <VSCodeButton appearance="secondary">
-                <span className="codicon codicon-copy"></span> Copy
-              </VSCodeButton>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-2xl mb-6">
+            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
           </div>
-        ))}
-      </div>
-
-      <div className="validation-section">
-        <h2>Validation & Hints</h2>
-        {hasValidationError ? (
-          <div className="validation-error">
-            <span className="codicon codicon-error"></span>
-            <div className="error-content">
-              <div className="error-count">1 error</div>
-              <div className="error-message">
-                <span className="codicon codicon-error"></span>
-                Missing base image: At least one FROM instruction is required
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="validation-success">
-            <span className="codicon codicon-pass"></span> No issues found
-          </div>
-        )}
-      </div>
-
-      <div className="test-build-section">
-        <h2>Test Build Script</h2>
-        <div className="build-form">
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="test-image-name">
-                Image Name <span className="required">*</span>
-              </label>
-              <VSCodeTextField
-                id="test-image-name"
-                value={imageName}
-                onInput={(e: any) => setImageName(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="test-tag">Tag</label>
-              <VSCodeTextField
-                id="test-tag"
-                value={tag}
-                onInput={(e: any) => setTag(e.target.value)}
-              />
-            </div>
-          </div>
-          <VSCodeButton>
-            <span className="codicon codicon-play"></span> Run Test Build
-          </VSCodeButton>
+          <h1 className="text-5xl font-bold text-gray-900 mb-4">DockForge</h1>
+          <p className="text-xl text-gray-600">Simplify Your Docker & DevContainer Workflow</p>
         </div>
-      </div>
 
-      <div className="build-run-section">
-        <h2>Build & Run Image</h2>
-        <div className="build-form">
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="build-image-name">
-                Image Name <span className="required">*</span>
-              </label>
-              <VSCodeTextField
-                id="build-image-name"
-                value={imageName}
-                onInput={(e: any) => setImageName(e.target.value)}
-              />
+        {/* Features Grid */}
+        <div className="grid md:grid-cols-2 gap-6 mb-12">
+          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
             </div>
-            <div className="form-group">
-              <label htmlFor="build-tag">Tag</label>
-              <VSCodeTextField
-                id="build-tag"
-                value={tag}
-                onInput={(e: any) => setTag(e.target.value)}
-              />
-            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Dockerfile Builder</h3>
+            <p className="text-gray-600">Create and manage Dockerfiles with an intuitive visual interface. Build multi-stage containers effortlessly.</p>
           </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="container-name">Container Name</label>
-              <VSCodeTextField
-                id="container-name"
-                value={containerName}
-                onInput={(e: any) => setContainerName(e.target.value)}
-              />
+
+          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
             </div>
-            <div className="form-group">
-              <label htmlFor="port-mapping">Port Mapping</label>
-              <VSCodeTextField
-                id="port-mapping"
-                value={portMapping}
-                onInput={(e: any) => setPortMapping(e.target.value)}
-              />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">DevContainer Support</h3>
+            <p className="text-gray-600">Seamlessly integrate with VS Code DevContainers for consistent development environments.</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
             </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Quick Actions</h3>
+            <p className="text-gray-600">Build, run, and manage containers directly from VS Code with one-click actions.</p>
           </div>
-          <div className="action-buttons">
-            <VSCodeButton>
-              <span className="codicon codicon-tools"></span> Build Image
-            </VSCodeButton>
-            <VSCodeButton appearance="secondary">
-              <span className="codicon codicon-play"></span> Build & Run
-            </VSCodeButton>
+
+          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Template Library</h3>
+            <p className="text-gray-600">Access pre-built templates for popular frameworks and languages to get started faster.</p>
           </div>
+        </div>
+
+        {/* CTA Section */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-2xl p-8 text-center text-white">
+          <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+          <p className="text-blue-100 mb-6 text-lg">Open the command palette and run "DockForge: Show Panel" to begin building your containers.</p>
+          <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-lg">
+            Open DockForge
+          </button>
         </div>
       </div>
     </div>
