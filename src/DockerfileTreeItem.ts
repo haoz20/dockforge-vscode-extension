@@ -8,7 +8,7 @@ class DockerfileTreeItem extends vscode.TreeItem {
     ) {
         super(label, vscode.TreeItemCollapsibleState.None);
         this.contextValue = 'dockerfileItem';
-        this.iconPath = new vscode.ThemeIcon('whale');
+        this.iconPath = new vscode.ThemeIcon('package');
         this.tooltip = `Dockerfile: ${label}`;
         
         // Add command to open when clicked
