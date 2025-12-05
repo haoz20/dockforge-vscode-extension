@@ -1,17 +1,7 @@
 import React, { useState } from "react";
 import { StageCard, StageData } from "./StageCard";
-
 import { validateDockerfile } from "./utilities/validations";
-
 import ValidationPanel from "./ValidationPanel";  
-
-
-
-
-
-// console.log(results.warnings);
-// console.log(results.suggestions);
-
 
 export default function DockerfileBuilder() {
   const [stages, setStages] = useState<StageData[]>([]);
