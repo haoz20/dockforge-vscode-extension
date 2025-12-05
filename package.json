@@ -26,7 +26,8 @@
         },
         {
           "id": "dockforge-dockerhub",
-          "name": "Docker Hub"
+          "name": "Docker Hub",
+          "type": "tree"
         }
       ]
     },
