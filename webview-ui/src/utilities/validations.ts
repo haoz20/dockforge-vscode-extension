@@ -1,4 +1,4 @@
-import { StageData, CommandItem } from "../StageCard";
+import { StageData } from "../StageCard";
 
 export interface ValidationResult {
   warnings: string[];
