@@ -40,7 +40,7 @@ export function activate(context: ExtensionContext) {
       window.showInformationMessage(`Deleted: ${treeItem.label}`);
     }
   });
-  
+
   // Add Create New Dockerfile command
   const newDockerfileCommand = commands.registerCommand("dockforge.newDockerfile", async () => {
     // Show input box to get Dockerfile name
@@ -70,6 +70,7 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(
     showDockForgeCommand,
     openDockerfileBuilderCommand,
+    deleteDockerfileCommand,
     refreshCommand,
     newDockerfileCommand,
     dockerfilesView
