@@ -6,7 +6,6 @@ interface Props {
 export default function ValidationPanel({ warnings, suggestions }: Props) {
   return (
     <div className="mt-4 p-4 bg-[#1e1e1e] text-white rounded-lg shadow">
-
       <h2 className="text-lg font-bold mb-3">Validation & Hints</h2>
 
       {/* Warnings */}
