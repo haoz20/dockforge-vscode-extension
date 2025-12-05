@@ -23,7 +23,6 @@ export function activate(context: ExtensionContext) {
     console.log('Opening DockForge panel for project:', projectName);
     DockForgePanel.render(context.extensionUri);
   });
-  
   const showDockerHubCommand = commands.registerCommand(
     "dockforge.showDockerHub",
     (projectName?: string) => {
