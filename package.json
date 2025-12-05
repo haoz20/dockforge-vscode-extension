@@ -29,7 +29,12 @@
         }
       ]
     },
-
+    "viewsWelcome": [
+      {
+        "view": "dockforge-dockerfilesview",
+        "contents": "Welcome to DockForge!\nStart building your Dockerfiles.\n\n[$(add) Create New Dockerfile](command:dockforge.newDockerfile)\n\n[$(refresh) Refresh View](command:dockforge.refreshDockerfiles)"
+      }
+    ],
     "commands": [
       {
         "command": "dockforge.openDockerfileBuilder",
@@ -42,8 +47,13 @@
       },
       {
         "command": "dockforge.newDockerfile",
-        "title": "Create New Dockerfile",
+        "title": "DockForge: Create New Dockerfile",
         "icon": "$(add)"
+      },
+      {
+        "command": "dockforge.deleteDockerfile",
+        "title": "DockForge: Delete Dockerfile",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -57,6 +67,13 @@
           "command": "dockforge.newDockerfile",
           "when": "view == dockforge-dockerfilesview",
           "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "dockforge.deleteDockerfile",
+          "when": "view == dockforge-dockerfilesview && viewItem == dockerfileItem",
+          "group": "inline"
         }
       ]
     }
