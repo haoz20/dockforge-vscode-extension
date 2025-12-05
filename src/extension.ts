@@ -3,7 +3,6 @@ import { DockForgePanel } from "./panels/DockForgePanel";
 import { DockerHubPanel } from "./panels/DockerHubPanel";
 import { DockerfileTreeDataProvider } from "./DockerfileTreeDataProvider";
 
-
 export function activate(context: ExtensionContext) {
   console.log('DockForge extension is now active!');
 
