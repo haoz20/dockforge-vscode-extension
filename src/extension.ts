@@ -69,14 +69,14 @@ export function activate(context: ExtensionContext) {
   const newDockerfileCommand = commands.registerCommand("dockforge.newDockerfile", async () => {
     // Show input box to get Dockerfile name
     const dockerfileName = await window.showInputBox({
-      prompt: "Enter Dockerfile name",
-      placeHolder: "e.g., Node.js App, Python Backend, etc.",
+      prompt: 'Enter Dockerfile name',
+      placeHolder: 'e.g., Node.js App, Python Backend, etc.',
       validateInput: (value) => {
         if (!value || value.trim().length === 0) {
-          return "Dockerfile name cannot be empty";
+          return 'Dockerfile name cannot be empty';
         }
         return null;
-      },
+      }
     });
 
     if (dockerfileName) {
