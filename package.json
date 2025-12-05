@@ -17,6 +17,7 @@
         }
       ]
     },
+
     "views": {
       "dockforge": [
         {
@@ -31,9 +32,17 @@
     },
     "viewsWelcome": [
       {
+        "view": "dockforge-dockerhub",
+        "contents": "Welcome to Docker Hub!\nLogin to pull and push private images from Docker Hub.\n\n[Sign In](command:dockforge.showDockerHub)\n[Sign Up](https://hub.docker.com/signup)",
+        "when": "true"
+      },
+      {
         "view": "dockforge-dockerfilesview",
         "contents": "Welcome to DockForge!\nStart building your Dockerfiles.\n\n[$(add) Create New Dockerfile](command:dockforge.newDockerfile)\n\n[$(refresh) Refresh View](command:dockforge.refreshDockerfiles)"
       }
+    ],
+    "viewsWelcome": [
+      
     ],
     "commands": [
       {
@@ -57,7 +66,11 @@
       },
       {
         "command": "dockforge.showDockForge",
-        "title": "DockForge: Show DockForge"
+        "title": "DockForge: Show"
+      },
+      {
+        "command": "dockforge.openSignIn",
+        "title": "DockForge: Open Sign In"
       }
     ],
     "menus": {

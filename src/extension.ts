@@ -1,5 +1,6 @@
 import { commands, ExtensionContext, window, workspace } from "vscode";
 import { DockForgePanel } from "./panels/DockForgePanel";
+import { DockerHubPanel } from "./panels/DockerHubPanel";
 import { DockerfileTreeDataProvider } from "./DockerfileTreeDataProvider";
 
 export function activate(context: ExtensionContext) {
@@ -21,7 +22,14 @@ export function activate(context: ExtensionContext) {
     console.log('Opening DockForge panel for project:', projectName);
     DockForgePanel.render(context.extensionUri);
   });
-
+  const showDockerHubCommand = commands.registerCommand(
+    "dockforge.showDockerHub",
+    (projectName?: string) => {
+      DockerHubPanel.render(context.extensionUri);
+    }
+  );
+  // Add command to the extension context
+  context.subscriptions.push(showDockForgeCommand);
   // Command to open Dockerfile Builder when clicking tree item
   const openDockerfileBuilderCommand = commands.registerCommand("dockforge.openDockerfileBuilder", (treeItem?: any) => {
     console.log('Opening Dockerfile Builder for:', treeItem?.label);
@@ -72,6 +80,7 @@ export function activate(context: ExtensionContext) {
 
   // Add subscriptions to context
   context.subscriptions.push(
+    showDockerHubCommand
     showDockForgeCommand,
     openDockerfileBuilderCommand,
     deleteDockerfileCommand,
