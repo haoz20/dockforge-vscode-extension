@@ -25,7 +25,6 @@ export default function CommandDropdown({ value, options, onChange, className }:
   return (
     <div ref={dropdownRef} className={`relative ${className ?? "w-40"}`}>
 
-
       {/* Selected Box */}
       <button
         className="
