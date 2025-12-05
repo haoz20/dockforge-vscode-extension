@@ -80,7 +80,7 @@ export function activate(context: ExtensionContext) {
 
   // Add subscriptions to context
   context.subscriptions.push(
-    showDockerHubCommand
+    showDockerHubCommand,
     showDockForgeCommand,
     openDockerfileBuilderCommand,
     deleteDockerfileCommand,

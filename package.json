@@ -41,9 +41,6 @@
         "contents": "Welcome to DockForge!\nStart building your Dockerfiles.\n\n[$(add) Create New Dockerfile](command:dockforge.newDockerfile)\n\n[$(refresh) Refresh View](command:dockforge.refreshDockerfiles)"
       }
     ],
-    "viewsWelcome": [
-      
-    ],
     "commands": [
       {
         "command": "dockforge.openDockerfileBuilder",
