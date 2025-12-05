@@ -1,6 +1,8 @@
 import { commands, ExtensionContext, window } from "vscode";
 import { DockForgePanel } from "./panels/DockForgePanel";
+import { DockerHubPanel } from "./panels/DockerHubPanel";
 import { DockerfilesViewProvider } from "./views/DockerfilesViewProvider";
+
 
 export function activate(context: ExtensionContext) {
   console.log('DockForge extension is now active!');
@@ -19,6 +21,18 @@ export function activate(context: ExtensionContext) {
     console.log('Opening DockForge panel for project:', projectName);
     DockForgePanel.render(context.extensionUri);
   });
+
+  
+  const showDockerHubCommand = commands.registerCommand(
+    "dockforge.showDockerHub",
+    (projectName?: string) => {
+      DockerHubPanel.render(context.extensionUri);
+    }
+  );
+context
+.subscriptions.push(showDockerHubCommand);
+
+
 
   // Add command to the extension context
   context.subscriptions.push(showDockForgeCommand);
