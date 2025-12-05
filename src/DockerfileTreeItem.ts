@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 
-
 class DockerfileTreeItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,

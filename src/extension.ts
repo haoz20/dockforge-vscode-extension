@@ -18,13 +18,10 @@ export function activate(context: ExtensionContext) {
   });
 
   // Create the show DockForge command (opens the main panel)
-  const showDockForgeCommand = commands.registerCommand(
-    "dockforge.showDockForge",
-    (projectName?: string) => {
-      console.log("Opening DockForge panel for project:", projectName);
-      DockForgePanel.render(context.extensionUri);
-    }
-  );
+  const showDockForgeCommand = commands.registerCommand("dockforge.showDockForge", (projectName?: string) => {
+    console.log('Opening DockForge panel for project:', projectName);
+    DockForgePanel.render(context.extensionUri);
+  });
   const showDockerHubCommand = commands.registerCommand(
     "dockforge.showDockerHub",
     (projectName?: string) => {
