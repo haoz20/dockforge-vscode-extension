@@ -50,7 +50,7 @@ export function activate(context: ExtensionContext) {
         dockerfileTreeDataProvider.removeDockerfile(treeItem.label);
         window.showInformationMessage(`Deleted: ${treeItem.label}`);
       } catch (error) {
-        window.showErrorMessage(`Failed to delete: ${treeItem.label}. ${error instanceof Error ? error.message : String(error)}`);
+        window.showErrorMessage(`Failed to delete ${treeItem.label}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
   });
