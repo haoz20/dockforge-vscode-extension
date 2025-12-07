@@ -1,5 +1,6 @@
 {
   "name": "dockforge",
+  "publisher": "dockforge",
   "displayName": "DockForge",
   "description": "A VS Code extension for Docker and DevContainer management with React + Vite and the Webview UI Toolkit.",
   "version": "0.0.1",
