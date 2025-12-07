@@ -28,7 +28,6 @@ export function activate(context: ExtensionContext) {
       DockerHubPanel.render(context.extensionUri);
     }
   );
-  // Add command to the extension context
   context.subscriptions.push(showDockForgeCommand);
   // Command to open Dockerfile Builder when clicking tree item
   const openDockerfileBuilderCommand = commands.registerCommand("dockforge.openDockerfileBuilder", (treeItem?: any) => {
