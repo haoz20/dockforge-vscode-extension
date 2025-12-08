@@ -26,28 +26,20 @@
           "type": "webview"
         },
         {
-          "id": "dockforge-dockerhub",
-          "name": "Docker Hub"
+          "id": "dockforge-dockerhubview",
+          "name": "Docker Hub",
+          "type": "webview"
         }
       ]
     },
-
-
-    "viewsWelcome": [
-      {
-        "view": "dockforge-dockerhub",
-        "contents": "Welcome to Docker Hub!\nLogin to pull and push private images from Docker Hub.\n\n[Sign In](command:dockforge.showDockerHub)\n[Sign Up](https://hub.docker.com/signup)",
-        "when": "true"
-      }
-    ],
     "commands": [
       {
         "command": "dockforge.showDockForge",
         "title": "DockForge: Show"
       },
       {
-        "command": "dockforge.openSignIn",
-        "title": "DockForge: Open Sign In"
+        "command": "dockforge.showDockerHub",
+        "title": "DockForge: Docker Hub Show"
       }
     ]
   },

@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { getNonce } from "../utilities/getNonce";
+import { getNonce } from "./utilities/getNonce";
 
 export class DockerfilesViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "dockforge-dockerfilesview";
