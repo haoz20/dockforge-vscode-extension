@@ -35,8 +35,6 @@
         }
       ]
     },
-
-
     "viewsWelcome": [
       {
         "view": "dockforge-dockerhub",
@@ -49,14 +47,6 @@
       }
     ],
     "commands": [
-      {
-        "command": "dockforge.showDockForge",
-        "title": "DockForge: Show"
-      },
-      {
-        "command": "dockforge.openSignIn",
-        "title": "DockForge: Open Sign In"
-      },
       {
         "command": "dockforge.openDockerfileBuilder",
         "title": "DockForge: Open Dockerfile Builder"
@@ -78,7 +68,11 @@
       },
       {
         "command": "dockforge.showDockForge",
-        "title": "DockForge: Show DockForge"
+        "title": "DockForge: Show"
+      },
+      {
+        "command": "dockforge.openSignIn",
+        "title": "DockForge: Open Sign In"
       }
     ],
     "menus": {
