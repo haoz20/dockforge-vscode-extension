@@ -18,10 +18,13 @@ export function activate(context: ExtensionContext) {
   });
 
   // Create the show DockForge command (opens the main panel)
-  const showDockForgeCommand = commands.registerCommand("dockforge.showDockForge", (projectName?: string) => {
-    console.log('Opening DockForge panel for project:', projectName);
-    DockForgePanel.render(context.extensionUri);
-  });
+  const showDockForgeCommand = commands.registerCommand(
+    "dockforge.showDockForge",
+    (projectName?: string) => {
+      console.log("Opening DockForge panel for project:", projectName);
+      DockForgePanel.render(context.extensionUri);
+    }
+  );
   const showDockerHubCommand = commands.registerCommand(
     "dockforge.showDockerHub",
     (projectName?: string) => {
@@ -44,29 +47,36 @@ export function activate(context: ExtensionContext) {
   });
 
   // Delete Dockerfile command
-  const deleteDockerfileCommand = commands.registerCommand("dockforge.deleteDockerfile", (treeItem: any) => {
-    if (treeItem && treeItem.label) {
-      try {
-        dockerfileTreeDataProvider.removeDockerfile(treeItem.label);
-        window.showInformationMessage(`Deleted: ${treeItem.label}`);
-      } catch (error) {
-        window.showErrorMessage(`Failed to delete ${treeItem.label}: ${error instanceof Error ? error.message : String(error)}`);
+  const deleteDockerfileCommand = commands.registerCommand(
+    "dockforge.deleteDockerfile",
+    (treeItem: any) => {
+      if (treeItem && treeItem.label) {
+        try {
+          dockerfileTreeDataProvider.removeDockerfile(treeItem.label);
+          window.showInformationMessage(`Deleted: ${treeItem.label}`);
+        } catch (error) {
+          window.showErrorMessage(
+            `Failed to delete ${treeItem.label}: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
       }
     }
-  });
+  );
 
   // Add Create New Dockerfile command
   const newDockerfileCommand = commands.registerCommand("dockforge.newDockerfile", async () => {
     // Show input box to get Dockerfile name
     const dockerfileName = await window.showInputBox({
-      prompt: 'Enter Dockerfile name',
-      placeHolder: 'e.g., Node.js App, Python Backend, etc.',
+      prompt: "Enter Dockerfile name",
+      placeHolder: "e.g., Node.js App, Python Backend, etc.",
       validateInput: (value) => {
         if (!value || value.trim().length === 0) {
-          return 'Dockerfile name cannot be empty';
+          return "Dockerfile name cannot be empty";
         }
         return null;
-      }
+      },
     });
 
     if (dockerfileName) {
