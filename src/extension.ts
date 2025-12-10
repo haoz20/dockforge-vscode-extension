@@ -32,10 +32,9 @@ export function activate(context: ExtensionContext) {
   });
 
   const showDockerHubCommand = commands.registerCommand("dockforge.showDockerHub", (projectName?: string) => {
-    console.log('Opening Docker Hub Signin panel for project:', projectName);
+    console.log('Opening Docker Hub Sign-in panel for project:', projectName);
     DockerHubPanel.render(context.extensionUri);
   });
-
 
   // Add command to the extension context
   context.subscriptions.push(showDockerHubCommand);
