@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui-toolkit/react";
 import { StageCard, StageData } from "./StageCard";
 import { validateDockerfile } from "./utilities/validations";
@@ -8,10 +8,12 @@ export default function DockerfileBuilder() {
   const [stages, setStages] = useState<StageData[]>([]);
   const [imageName, setImageName] = useState("my-app");
   const [imageTag, setImageTag] = useState("latest");
+  const stageCounterRef = useRef(0);
 
   const addStage = () => {
+    stageCounterRef.current += 1;
     const newStage: StageData = {
-      id: (stages.length + 1).toString(),
+      id: stageCounterRef.current.toString(),
       baseImage: "node:18-alpine",
       stageName: "",
       commands: [],
@@ -44,10 +46,11 @@ export default function DockerfileBuilder() {
       </div>
 
       {/* Render Stage Cards */}
-      {stages.map((stage) => (
+      {stages.map((stage, index) => (
         <StageCard
           key={stage.id}
           stage={stage}
+          stageNumber={index + 1}
           onUpdate={updateStage}
           onDelete={deleteStage}
         />
