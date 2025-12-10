@@ -1,10 +1,15 @@
 {
   "name": "dockforge",
+  "publisher": "dockforge",
   "displayName": "DockForge",
   "description": "A VS Code extension for Docker and DevContainer management with React + Vite and the Webview UI Toolkit.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.75.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/haoz20/dockforge-vscode-extension.git"
   },
   "main": "./out/extension.js",
   "contributes": {
@@ -22,8 +27,7 @@
       "dockforge": [
         {
           "id": "dockforge-dockerfilesview",
-          "name": "Build Dockerfiles",
-          "type": "webview"
+          "name": "Build Dockerfiles"
         },
         {
           "id": "dockforge-dockerhubview",
@@ -32,7 +36,37 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "dockforge-dockerhub",
+        "contents": "Welcome to Docker Hub!\nLogin to pull and push private images from Docker Hub.\n\n[Sign In](command:dockforge.showDockerHub)\n[Sign Up](https://hub.docker.com/signup)",
+        "when": "true"
+      },
+      {
+        "view": "dockforge-dockerfilesview",
+        "contents": "Welcome to DockForge!\nStart building your Dockerfiles.\n\n[$(add) Create New Dockerfile](command:dockforge.newDockerfile)\n\n[$(refresh) Refresh View](command:dockforge.refreshDockerfiles)"
+      }
+    ],
     "commands": [
+      {
+        "command": "dockforge.openDockerfileBuilder",
+        "title": "DockForge: Open Dockerfile Builder"
+      },
+      {
+        "command": "dockforge.refreshDockerfiles",
+        "title": "Refresh Dockerfiles",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "dockforge.newDockerfile",
+        "title": "DockForge: Create New Dockerfile",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dockforge.deleteDockerfile",
+        "title": "DockForge: Delete Dockerfile",
+        "icon": "$(trash)"
+      },
       {
         "command": "dockforge.showDockForge",
         "title": "DockForge: Show"
@@ -41,7 +75,28 @@
         "command": "dockforge.showDockerHub",
         "title": "DockForge: Docker Hub Show"
       }
-    ]
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "dockforge.refreshDockerfiles",
+          "when": "view == dockforge-dockerfilesview",
+          "group": "navigation"
+        },
+        {
+          "command": "dockforge.newDockerfile",
+          "when": "view == dockforge-dockerfilesview",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "dockforge.deleteDockerfile",
+          "when": "view == dockforge-dockerfilesview && viewItem == dockerfileItem",
+          "group": "inline"
+        }
+      ]
+    }
   },
   "scripts": {
     "install:all": "npm install && cd webview-ui && npm install",
