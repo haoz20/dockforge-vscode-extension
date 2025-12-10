@@ -5,19 +5,16 @@ interface Props {
 
 export default function ValidationPanel({ warnings, suggestions }: Props) {
   return (
-    <div className="mt-4 p-4 df-card">
-      <h2 className="text-lg font-bold df-heading mb-3">Validation & Hints</h2>
+    <div className="validation-panel">
+      <h2 className="validation-title">Validation & Hints</h2>
 
       {/* Warnings */}
-      <div className="mb-4">
-        <p className="font-semibold df-tag-warning">
+      <div className="warnings-section">
+        <p className="warning-header">
           ⚠ {warnings.length} warnings
         </p>
         {warnings.map((msg, idx) => (
-          <div
-            key={idx}
-            className="mt-2 p-3 df-card"
-          >
+          <div key={idx} className="warning-item">
             {msg}
           </div>
         ))}
@@ -25,14 +22,11 @@ export default function ValidationPanel({ warnings, suggestions }: Props) {
 
       {/* Suggestions */}
       <div>
-        <p className="font-semibold df-tag-info">
+        <p className="info-header">
           💡 {suggestions.length} suggestions
         </p>
         {suggestions.map((msg, idx) => (
-          <div
-            key={idx}
-            className="mt-2 p-3 df-card"
-          >
+          <div key={idx} className="info-item">
             {msg}
           </div>
         ))}

@@ -1,133 +1,134 @@
-@import "tailwindcss";
-
 body {
   margin: 0;
   padding: 0;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
   background-color: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
 }
 
-:root {
-  --df-surface: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
-  --df-surface-elevated: var(--vscode-editor-background);
-  --df-border: var(--vscode-panel-border, var(--vscode-editorWidget-border));
-  --df-foreground: var(--vscode-editor-foreground);
-  --df-muted: var(--vscode-descriptionForeground, var(--vscode-editor-foreground));
-  --df-button-bg: var(--vscode-button-background);
-  --df-button-bg-hover: var(--vscode-button-hoverBackground);
-  --df-button-fg: var(--vscode-button-foreground);
-  --df-button-secondary-bg: var(--vscode-button-secondaryBackground, transparent);
-  --df-button-secondary-fg: var(--vscode-button-secondaryForeground, var(--vscode-editor-foreground));
-  --df-input-bg: var(--vscode-input-background);
-  --df-input-fg: var(--vscode-input-foreground);
-  --df-input-border: var(--vscode-input-border);
-  --df-focus-ring: var(--vscode-focusBorder);
-  --df-warning: var(--vscode-editorWarning-foreground, #d7ba7d);
-  --df-info: var(--vscode-editorInfo-foreground, #4fc1ff);
-  --df-error: var(--vscode-errorForeground, #f14c4c);
-  --df-list-hover: var(--vscode-list-hoverBackground, var(--vscode-editor-selectionHighlightBackground));
-  --df-list-active: var(--vscode-list-activeSelectionBackground, var(--vscode-button-background));
-  --df-list-active-fg: var(--vscode-list-activeSelectionForeground, var(--vscode-button-foreground));
+.container {
+  padding: 20px;
 }
 
-.df-card {
-  background: var(--df-surface);
-  border: 1px solid var(--df-border);
-  border-radius: 12px;
-  color: var(--df-foreground);
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
-.df-card-elevated {
-  background: var(--df-surface-elevated);
-  border: 1px solid var(--df-border);
-  border-radius: 12px;
-  color: var(--df-foreground);
+.button-row {
+  margin-top: 24px;
+  display: flex;
+  gap: 12px;
 }
 
-.df-heading {
-  color: var(--df-foreground);
+.validation-container {
+  margin-top: 16px;
 }
 
-.df-label {
-  color: var(--df-foreground);
+.stage-card {
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  background-color: var(--vscode-editor-background);
 }
 
-.df-muted {
-  color: var(--df-muted);
+.stage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
-.df-button-primary {
-  background: var(--df-button-bg);
-  color: var(--df-button-fg);
-  border: 1px solid var(--df-button-bg);
+.field-container {
+  margin-top: 16px;
 }
 
-.df-button-primary:hover {
-  background: var(--df-button-bg-hover);
+.field-label {
+  display: block;
+  margin-bottom: 8px;
 }
 
-.df-button-secondary {
-  background: var(--df-button-secondary-bg);
-  color: var(--df-button-secondary-fg);
-  border: 1px solid var(--df-border);
+.commands-section {
+  margin-top: 20px;
 }
 
-.df-button-secondary:hover {
-  border-color: var(--df-focus-ring);
+.commands-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
-.df-input {
-  background: var(--df-input-bg);
-  color: var(--df-input-fg);
-  border: 1px solid var(--df-input-border);
+.commands-label {
+  font-weight: 500;
 }
 
-.df-input:focus {
-  outline: 1px solid var(--df-focus-ring);
-  border-color: var(--df-focus-ring);
+.command-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
-.df-input::placeholder {
-  color: var(--vscode-input-placeholderForeground, var(--df-muted));
+.command-input {
+  flex: 1;
 }
 
-.df-dropdown {
-  background: var(--df-input-bg);
-  color: var(--df-input-fg);
-  border: 1px solid var(--df-input-border);
+.delete-icon {
+  width: 20px;
+  height: 20px;
 }
 
-.df-dropdown-panel {
-  background: var(--df-surface);
-  border: 1px solid var(--df-border);
-  color: var(--df-foreground);
+.empty-state {
+  padding: 16px;
+  text-align: center;
+  font-style: italic;
+  opacity: 0.7;
 }
 
-.df-dropdown-option {
-  color: var(--df-foreground);
+.validation-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
 }
 
-.df-dropdown-option:hover {
-  background: var(--df-list-hover);
+.validation-title {
+  margin-bottom: 12px;
 }
 
-.df-dropdown-option.is-active {
-  background: var(--df-list-active);
-  color: var(--df-list-active-fg);
+.warnings-section {
+  margin-bottom: 16px;
 }
 
-.df-tag-warning {
-  color: var(--df-warning);
+.warning-header {
+  font-weight: 600;
+  color: var(--vscode-editorWarning-foreground);
+  margin-bottom: 8px;
 }
 
-.df-tag-info {
-  color: var(--df-info);
+.warning-item {
+  margin-top: 8px;
+  padding: 12px;
+  background-color: var(--vscode-inputValidation-warningBackground);
+  border: 1px solid var(--vscode-inputValidation-warningBorder);
+  border-radius: 4px;
 }
 
-.df-danger {
-  color: var(--df-error);
+.info-header {
+  font-weight: 600;
+  color: var(--vscode-editorInfo-foreground);
+  margin-bottom: 8px;
 }
 
-.df-border-dashed {
-  border-style: dashed;
+.info-item {
+  margin-top: 8px;
+  padding: 12px;
+  background-color: var(--vscode-inputValidation-infoBackground);
+  border: 1px solid var(--vscode-inputValidation-infoBorder);
+  border-radius: 4px;
 }

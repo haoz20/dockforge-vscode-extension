@@ -1,4 +1,5 @@
 import React from "react";
+import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui-toolkit/react";
 import CommandDropdown from "./CommandDropdown";
 
 export interface CommandItem {
@@ -86,85 +87,90 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete 
   };
 
   return (
-    <div className="df-card p-5 mt-4">
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="df-heading font-semibold">Stage {stage.id}</h2>
-        <button onClick={() => onDelete(stage.id)} className="df-danger hover:opacity-75" title="Delete stage">
+    <div className="stage-card">
+      <div className="stage-header">
+        <h2>Stage {stage.id}</h2>
+        <VSCodeButton appearance="icon" onClick={() => onDelete(stage.id)} title="Delete stage">
           ✕
-        </button>
+        </VSCodeButton>
       </div>
+
+      <VSCodeDivider />
 
       {/* Base Image Field */}
-      <label className="df-label font-medium">Base Image *</label>
-      <CommandDropdown
-        value={stage.baseImage}
-        options={baseImageOptions}
-        onChange={(val) => updateField("baseImage", val)}
-        className="w-full"
-      />
-      <div className="mb-4"></div>
-
-      {/* Stage Name Field */}
-      <label className="df-label font-medium">Stage Name (optional)</label>
-      <input
-        className="df-input w-full p-2 rounded mb-4"
-        placeholder="builder, production..."
-        value={stage.stageName}
-        onChange={(e) => updateField("stageName", e.target.value)}
-      />
-
-      {/* Commands */}
-      <div className="flex justify-between items-center mb-2">
-        <label className="df-label font-medium">Commands</label>
-        <button
-          onClick={addCommand}
-          className="px-3 py-1 rounded text-sm df-button-primary">
-          + Add Command
-        </button>
+      <div className="field-container">
+        <label className="field-label">Base Image *</label>
+        <CommandDropdown
+          value={stage.baseImage}
+          options={baseImageOptions}
+          onChange={(val) => updateField("baseImage", val)}
+          className="w-full"
+        />
       </div>
 
-      {stage.commands.length === 0 ? (
-        <div className="df-card df-border-dashed text-sm p-4 italic">
-          No commands added yet. Click <span className="font-medium">"Add Command"</span> to start.
+      {/* Stage Name Field */}
+      <div className="field-container">
+        <label className="field-label">Stage Name (optional)</label>
+        <VSCodeTextField
+          style={{ width: "100%" }}
+          placeholder="builder, production..."
+          value={stage.stageName}
+          onInput={(e: any) => updateField("stageName", e.target.value)}
+        />
+      </div>
+
+      {/* Commands */}
+      <div className="commands-section">
+        <div className="commands-header">
+          <label className="commands-label">Commands</label>
+          <VSCodeButton appearance="secondary" onClick={addCommand}>
+            + Add Command
+          </VSCodeButton>
         </div>
-      ) : (
-        stage.commands.map((cmd) => (
-          <div key={cmd.id} className="flex gap-3 mb-3 items-center">
-            <CommandDropdown
-              value={cmd.type}
-              options={commandOptions}
-              onChange={(val) => updateCommand(cmd.id, { type: val })}
-              className="w-40"
-            />
 
-            <input
-              className="df-input flex-1 p-2.5 rounded-lg text-sm"
-              placeholder="Enter value..."
-              value={cmd.value}
-              onChange={(e) => updateCommand(cmd.id, { value: e.target.value })}
-            />
-
-            <button
-              onClick={() => deleteCommand(cmd.id)}
-              className="df-danger hover:opacity-75"
-              title="Delete command">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 7h12M9 7v10m6-10v10M4 7h16l-1 12a2 2 0 01-2 2H7a2 2 0 01-2-2L4 7zm5-3h6v2H9V4z"
-                />
-              </svg>
-            </button>
+        {stage.commands.length === 0 ? (
+          <div className="empty-state">
+            No commands added yet. Click <strong>"Add Command"</strong> to start.
           </div>
-        ))
-      )}
+        ) : (
+          stage.commands.map((cmd) => (
+            <div key={cmd.id} className="command-row">
+              <CommandDropdown
+                value={cmd.type}
+                options={commandOptions}
+                onChange={(val) => updateCommand(cmd.id, { type: val })}
+                className="w-40"
+              />
+
+              <VSCodeTextField
+                className="command-input"
+                placeholder="Enter value..."
+                value={cmd.value}
+                onInput={(e: any) => updateCommand(cmd.id, { value: e.target.value })}
+              />
+
+              <VSCodeButton
+                appearance="icon"
+                onClick={() => deleteCommand(cmd.id)}
+                title="Delete command">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="delete-icon">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 7h12M9 7v10m6-10v10M4 7h16l-1 12a2 2 0 01-2 2H7a2 2 0 01-2-2L4 7zm5-3h6v2H9V4z"
+                  />
+                </svg>
+              </VSCodeButton>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };
