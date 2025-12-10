@@ -132,3 +132,43 @@ body {
   border: 1px solid var(--vscode-inputValidation-infoBorder);
   border-radius: 4px;
 }
+
+.test-build-section {
+  margin-top: 32px;
+}
+
+.section-title {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.test-build-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-field vscode-text-field {
+  width: 100%;
+}
+
+.required {
+  color: var(--vscode-errorForeground);
+}
+
+.button-icon {
+  margin-right: 8px;
+}

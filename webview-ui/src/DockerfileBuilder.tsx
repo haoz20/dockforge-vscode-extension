@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { VSCodeButton } from "@vscode/webview-ui-toolkit/react";
+import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui-toolkit/react";
 import { StageCard, StageData } from "./StageCard";
 import { validateDockerfile } from "./utilities/validations";
 import ValidationPanel from "./ValidationPanel";  
 
 export default function DockerfileBuilder() {
   const [stages, setStages] = useState<StageData[]>([]);
+  const [imageName, setImageName] = useState("my-app");
+  const [imageTag, setImageTag] = useState("latest");
 
   const addStage = () => {
     const newStage: StageData = {
@@ -25,6 +27,11 @@ export default function DockerfileBuilder() {
 
   const deleteStage = (id: string) => {
     setStages(stages.filter((stage) => stage.id !== id));
+  };
+
+  const handleRunTestBuild = () => {
+    console.log("Running test build with:", { imageName, imageTag, stages });
+    // TODO: Implement docker build logic
   };
 
   const results = validateDockerfile(stages);
@@ -50,6 +57,40 @@ export default function DockerfileBuilder() {
       <div className="button-row">
         <VSCodeButton>Insert to Workspace</VSCodeButton>
         <VSCodeButton appearance="secondary">Copy</VSCodeButton>
+      </div>
+
+      {/* Test Build Script Section */}
+      <div className="test-build-section">
+        <VSCodeDivider />
+        <h2 className="section-title">Test Build Script</h2>
+        
+        <div className="test-build-form">
+          <div className="form-row">
+            <div className="form-field">
+              <label className="field-label">
+                Image Name <span className="required">*</span>
+              </label>
+              <VSCodeTextField
+                value={imageName}
+                onInput={(e: any) => setImageName(e.target.value)}
+                placeholder="my-app"
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="field-label">Tag</label>
+              <VSCodeTextField
+                value={imageTag}
+                onInput={(e: any) => setImageTag(e.target.value)}
+                placeholder="latest"
+              />
+            </div>
+          </div>
+
+          <VSCodeButton onClick={handleRunTestBuild}>
+            <span className="button-icon">▶</span> Run Test Build
+          </VSCodeButton>
+        </div>
       </div>
 
       {/* Validation panel */}
