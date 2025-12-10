@@ -1,8 +1,174 @@
-@import "tailwindcss";
-
 body {
   margin: 0;
   padding: 0;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
   background-color: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
+}
+
+.container {
+  padding: 20px;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.button-row {
+  margin-top: 24px;
+  display: flex;
+  gap: 12px;
+}
+
+.validation-container {
+  margin-top: 16px;
+}
+
+.stage-card {
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  background-color: var(--vscode-editor-background);
+}
+
+.stage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.field-container {
+  margin-top: 16px;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.commands-section {
+  margin-top: 20px;
+}
+
+.commands-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.commands-label {
+  font-weight: 500;
+}
+
+.command-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.command-input {
+  flex: 1;
+}
+
+.delete-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.empty-state {
+  padding: 16px;
+  text-align: center;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.validation-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+}
+
+.validation-title {
+  margin-bottom: 12px;
+}
+
+.warnings-section {
+  margin-bottom: 16px;
+}
+
+.warning-header {
+  font-weight: 600;
+  color: var(--vscode-editorWarning-foreground);
+  margin-bottom: 8px;
+}
+
+.warning-item {
+  margin-top: 8px;
+  padding: 12px;
+  background-color: var(--vscode-inputValidation-warningBackground);
+  border: 1px solid var(--vscode-inputValidation-warningBorder);
+  border-radius: 4px;
+}
+
+.info-header {
+  font-weight: 600;
+  color: var(--vscode-editorInfo-foreground);
+  margin-bottom: 8px;
+}
+
+.info-item {
+  margin-top: 8px;
+  padding: 12px;
+  background-color: var(--vscode-inputValidation-infoBackground);
+  border: 1px solid var(--vscode-inputValidation-infoBorder);
+  border-radius: 4px;
+}
+
+.test-build-section {
+  margin-top: 32px;
+}
+
+.section-title {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.test-build-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-field vscode-text-field {
+  width: 100%;
+}
+
+.required {
+  color: var(--vscode-errorForeground);
+}
+
+.button-icon {
+  margin-right: 8px;
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui-toolkit/react";
 import CommandDropdown from "./CommandDropdown";
 
 export interface CommandItem {
@@ -16,6 +17,7 @@ export interface StageData {
 
 interface StageCardProps {
   stage: StageData;
+  stageNumber: number;
   onUpdate: (updatedStage: StageData) => void;
   onDelete: (id: string) => void;
 }
@@ -57,7 +59,7 @@ const baseImageOptions = [
   "postgres:15-alpine",
 ];
 
-export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete }) => {
+export const StageCard: React.FC<StageCardProps> = ({ stage, stageNumber, onUpdate, onDelete }) => {
   const updateField = (field: keyof StageData, value: any) => {
     onUpdate({ ...stage, [field]: value });
   };
@@ -86,85 +88,90 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete 
   };
 
   return (
-    <div className="border border-[#dcdcdc] bg-white rounded-xl p-5 mt-4 shadow-sm">
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="text-[#1e1e1e] font-semibold">Stage {stage.id}</h2>
-        <button onClick={() => onDelete(stage.id)} className="text-[#d13438] hover:opacity-75">
+    <div className="stage-card">
+      <div className="stage-header">
+        <h2>Stage {stageNumber}</h2>
+        <VSCodeButton appearance="icon" onClick={() => onDelete(stage.id)} title="Delete stage">
           ✕
-        </button>
+        </VSCodeButton>
       </div>
+
+      <VSCodeDivider />
 
       {/* Base Image Field */}
-      <label className="text-[#1e1e1e] font-medium">Base Image *</label>
-      <CommandDropdown
-        value={stage.baseImage}
-        options={baseImageOptions}
-        onChange={(val) => updateField("baseImage", val)}
-        className="w-full"
-      />
-      <div className="mb-4"></div>
-
-      {/* Stage Name Field */}
-      <label className="text-[#1e1e1e] font-medium">Stage Name (optional)</label>
-      <input
-        className="w-full p-2 rounded bg-[#f3f3f3] text-[#1e1e1e] border border-[#dcdcdc] mb-4 placeholder-[#6f6f6f]"
-        placeholder="builder, production..."
-        value={stage.stageName}
-        onChange={(e) => updateField("stageName", e.target.value)}
-      />
-
-      {/* Commands */}
-      <div className="flex justify-between items-center mb-2">
-        <label className="text-[#1e1e1e] font-medium">Commands</label>
-        <button
-          onClick={addCommand}
-          className="px-3 py-1 rounded bg-[#0078d4] text-white text-sm hover:bg-[#005a9e]">
-          + Add Command
-        </button>
+      <div className="field-container">
+        <label className="field-label">Base Image *</label>
+        <CommandDropdown
+          value={stage.baseImage}
+          options={baseImageOptions}
+          onChange={(val) => updateField("baseImage", val)}
+          className="w-full"
+        />
       </div>
 
-      {stage.commands.length === 0 ? (
-        <div className="border border-[#dcdcdc] bg-[#f8f8f8] text-[#555] text-sm p-4 rounded-lg italic">
-          No commands added yet. Click <span className="font-medium">"Add Command"</span> to start.
+      {/* Stage Name Field */}
+      <div className="field-container">
+        <label className="field-label">Stage Name (optional)</label>
+        <VSCodeTextField
+          style={{ width: "100%" }}
+          placeholder="builder, production..."
+          value={stage.stageName}
+          onInput={(e) => updateField("stageName", (e.target as HTMLInputElement).value)}
+        />
+      </div>
+
+      {/* Commands */}
+      <div className="commands-section">
+        <div className="commands-header">
+          <label className="commands-label">Commands</label>
+          <VSCodeButton appearance="secondary" onClick={addCommand}>
+            + Add Command
+          </VSCodeButton>
         </div>
-      ) : (
-        stage.commands.map((cmd) => (
-          <div key={cmd.id} className="flex gap-3 mb-3 items-center">
-            <CommandDropdown
-              value={cmd.type}
-              options={commandOptions}
-              onChange={(val) => updateCommand(cmd.id, { type: val })}
-              className="w-40"
-            />
 
-            <input
-              className="flex-1 p-2.5 rounded-lg bg-[#f3f3f3] border border-[#dcdcdc] text-[#1e1e1e] text-sm placeholder-[#6f6f6f]"
-              placeholder="Enter value..."
-              value={cmd.value}
-              onChange={(e) => updateCommand(cmd.id, { value: e.target.value })}
-            />
-
-            <button
-              onClick={() => deleteCommand(cmd.id)}
-              className="text-[#d13438] hover:opacity-75"
-              title="Delete command">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 7h12M9 7v10m6-10v10M4 7h16l-1 12a2 2 0 01-2 2H7a2 2 0 01-2-2L4 7zm5-3h6v2H9V4z"
-                />
-              </svg>
-            </button>
+        {stage.commands.length === 0 ? (
+          <div className="empty-state">
+            No commands added yet. Click <strong>"Add Command"</strong> to start.
           </div>
-        ))
-      )}
+        ) : (
+          stage.commands.map((cmd) => (
+            <div key={cmd.id} className="command-row">
+              <CommandDropdown
+                value={cmd.type}
+                options={commandOptions}
+                onChange={(val) => updateCommand(cmd.id, { type: val })}
+                className="w-40"
+              />
+
+              <VSCodeTextField
+                className="command-input"
+                placeholder="Enter value..."
+                value={cmd.value}
+                onInput={(e) => updateCommand(cmd.id, { value: (e.target as HTMLInputElement).value })}
+              />
+
+              <VSCodeButton
+                appearance="icon"
+                onClick={() => deleteCommand(cmd.id)}
+                title="Delete command">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="delete-icon">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 7h12M9 7v10m6-10v10M4 7h16l-1 12a2 2 0 01-2 2H7a2 2 0 01-2-2L4 7zm5-3h6v2H9V4z"
+                  />
+                </svg>
+              </VSCodeButton>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };
