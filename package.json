@@ -30,8 +30,9 @@
           "name": "Build Dockerfiles"
         },
         {
-          "id": "dockforge-dockerhub",
-          "name": "Docker Hub"
+          "id": "dockforge-dockerhubview",
+          "name": "Docker Hub",
+          "type": "webview"
         }
       ]
     },
@@ -71,8 +72,8 @@
         "title": "DockForge: Show"
       },
       {
-        "command": "dockforge.openSignIn",
-        "title": "DockForge: Open Sign In"
+        "command": "dockforge.showDockerHub",
+        "title": "DockForge: Docker Hub Show"
       }
     ],
     "menus": {
