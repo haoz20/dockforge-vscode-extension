@@ -75,7 +75,7 @@ export default function DockerfileBuilder() {
               </label>
               <VSCodeTextField
                 value={imageName}
-                onInput={(e: any) => setImageName(e.target.value)}
+                onInput={(e) => setImageName((e.target as HTMLInputElement).value)}
                 placeholder="my-app"
               />
             </div>
@@ -84,7 +84,7 @@ export default function DockerfileBuilder() {
               <label className="field-label">Tag</label>
               <VSCodeTextField
                 value={imageTag}
-                onInput={(e: any) => setImageTag(e.target.value)}
+                onInput={(e) => setImageTag((e.target as HTMLInputElement).value)}
                 placeholder="latest"
               />
             </div>

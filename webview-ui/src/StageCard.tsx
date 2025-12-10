@@ -116,7 +116,7 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, stageNumber, onUpda
           style={{ width: "100%" }}
           placeholder="builder, production..."
           value={stage.stageName}
-          onInput={(e: any) => updateField("stageName", e.target.value)}
+          onInput={(e) => updateField("stageName", (e.target as HTMLInputElement).value)}
         />
       </div>
 
@@ -147,7 +147,7 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, stageNumber, onUpda
                 className="command-input"
                 placeholder="Enter value..."
                 value={cmd.value}
-                onInput={(e: any) => updateCommand(cmd.id, { value: e.target.value })}
+                onInput={(e) => updateCommand(cmd.id, { value: (e.target as HTMLInputElement).value })}
               />
 
               <VSCodeButton
