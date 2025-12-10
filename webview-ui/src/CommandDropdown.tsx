@@ -28,11 +28,10 @@ export default function CommandDropdown({ value, options, onChange, className }:
       {/* Selected Box */}
       <button
         className="
-          w-full p-2.5 rounded-lg border border-[#cccccc]
-          bg-white text-left text-sm text-[#1e1e1e]
-          flex justify-between items-center shadow-sm
-          hover:border-[#999]
-          focus:outline-none focus:ring-2 focus:ring-[#0078d4]
+          w-full p-2.5 rounded-lg df-dropdown
+          text-left text-sm flex justify-between items-center shadow-sm
+          hover:border-[var(--df-focus-ring)]
+          focus:outline-none focus:ring-2 focus:ring-[var(--df-focus-ring)]
           transition
         "
         onClick={() => setOpen(!open)}
@@ -45,7 +44,7 @@ export default function CommandDropdown({ value, options, onChange, className }:
       {open && (
         <div
           className="
-            absolute z-20 mt-1 w-full bg-white rounded-lg border border-[#d0d0d0]
+            absolute z-20 mt-1 w-full rounded-lg df-dropdown-panel
             shadow-lg max-h-60 overflow-y-auto animate-fadeIn
           "
         >
@@ -57,9 +56,9 @@ export default function CommandDropdown({ value, options, onChange, className }:
                 setOpen(false);
               }}
               className={`
-                px-3 py-2 text-sm cursor-pointer select-none
-                hover:bg-[#e5f1fb]
-                ${option === value ? "bg-[#e8f3ff] font-semibold text-[#005a9e]" : ""}
+                px-3 py-2 text-sm cursor-pointer select-none df-dropdown-option
+                hover:bg-[var(--df-list-hover)]
+                ${option === value ? "is-active font-semibold" : ""}
               `}
             >
               {option}

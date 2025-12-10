@@ -6,3 +6,128 @@ body {
   background-color: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
 }
+
+:root {
+  --df-surface: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+  --df-surface-elevated: var(--vscode-editor-background);
+  --df-border: var(--vscode-panel-border, var(--vscode-editorWidget-border));
+  --df-foreground: var(--vscode-editor-foreground);
+  --df-muted: var(--vscode-descriptionForeground, var(--vscode-editor-foreground));
+  --df-button-bg: var(--vscode-button-background);
+  --df-button-bg-hover: var(--vscode-button-hoverBackground);
+  --df-button-fg: var(--vscode-button-foreground);
+  --df-button-secondary-bg: var(--vscode-button-secondaryBackground, transparent);
+  --df-button-secondary-fg: var(--vscode-button-secondaryForeground, var(--vscode-editor-foreground));
+  --df-input-bg: var(--vscode-input-background);
+  --df-input-fg: var(--vscode-input-foreground);
+  --df-input-border: var(--vscode-input-border);
+  --df-focus-ring: var(--vscode-focusBorder);
+  --df-warning: var(--vscode-editorWarning-foreground, #d7ba7d);
+  --df-info: var(--vscode-editorInfo-foreground, #4fc1ff);
+  --df-error: var(--vscode-errorForeground, #f14c4c);
+  --df-list-hover: var(--vscode-list-hoverBackground, var(--vscode-editor-selectionHighlightBackground));
+  --df-list-active: var(--vscode-list-activeSelectionBackground, var(--vscode-button-background));
+  --df-list-active-fg: var(--vscode-list-activeSelectionForeground, var(--vscode-button-foreground));
+}
+
+.df-card {
+  background: var(--df-surface);
+  border: 1px solid var(--df-border);
+  border-radius: 12px;
+  color: var(--df-foreground);
+}
+
+.df-card-elevated {
+  background: var(--df-surface-elevated);
+  border: 1px solid var(--df-border);
+  border-radius: 12px;
+  color: var(--df-foreground);
+}
+
+.df-heading {
+  color: var(--df-foreground);
+}
+
+.df-label {
+  color: var(--df-foreground);
+}
+
+.df-muted {
+  color: var(--df-muted);
+}
+
+.df-button-primary {
+  background: var(--df-button-bg);
+  color: var(--df-button-fg);
+  border: 1px solid var(--df-button-bg);
+}
+
+.df-button-primary:hover {
+  background: var(--df-button-bg-hover);
+}
+
+.df-button-secondary {
+  background: var(--df-button-secondary-bg);
+  color: var(--df-button-secondary-fg);
+  border: 1px solid var(--df-border);
+}
+
+.df-button-secondary:hover {
+  border-color: var(--df-focus-ring);
+}
+
+.df-input {
+  background: var(--df-input-bg);
+  color: var(--df-input-fg);
+  border: 1px solid var(--df-input-border);
+}
+
+.df-input:focus {
+  outline: 1px solid var(--df-focus-ring);
+  border-color: var(--df-focus-ring);
+}
+
+.df-input::placeholder {
+  color: var(--vscode-input-placeholderForeground, var(--df-muted));
+}
+
+.df-dropdown {
+  background: var(--df-input-bg);
+  color: var(--df-input-fg);
+  border: 1px solid var(--df-input-border);
+}
+
+.df-dropdown-panel {
+  background: var(--df-surface);
+  border: 1px solid var(--df-border);
+  color: var(--df-foreground);
+}
+
+.df-dropdown-option {
+  color: var(--df-foreground);
+}
+
+.df-dropdown-option:hover {
+  background: var(--df-list-hover);
+}
+
+.df-dropdown-option.is-active {
+  background: var(--df-list-active);
+  color: var(--df-list-active-fg);
+}
+
+.df-tag-warning {
+  color: var(--df-warning);
+}
+
+.df-tag-info {
+  color: var(--df-info);
+}
+
+.df-danger {
+  color: var(--df-error);
+}
+
+.df-border-dashed {
+  border-style: dashed;
+}

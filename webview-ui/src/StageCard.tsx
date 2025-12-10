@@ -86,16 +86,16 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete 
   };
 
   return (
-    <div className="border border-[#dcdcdc] bg-white rounded-xl p-5 mt-4 shadow-sm">
+    <div className="df-card p-5 mt-4">
       <div className="flex justify-between items-center mb-3">
-        <h2 className="text-[#1e1e1e] font-semibold">Stage {stage.id}</h2>
-        <button onClick={() => onDelete(stage.id)} className="text-[#d13438] hover:opacity-75">
+        <h2 className="df-heading font-semibold">Stage {stage.id}</h2>
+        <button onClick={() => onDelete(stage.id)} className="df-danger hover:opacity-75" title="Delete stage">
           ✕
         </button>
       </div>
 
       {/* Base Image Field */}
-      <label className="text-[#1e1e1e] font-medium">Base Image *</label>
+      <label className="df-label font-medium">Base Image *</label>
       <CommandDropdown
         value={stage.baseImage}
         options={baseImageOptions}
@@ -105,9 +105,9 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete 
       <div className="mb-4"></div>
 
       {/* Stage Name Field */}
-      <label className="text-[#1e1e1e] font-medium">Stage Name (optional)</label>
+      <label className="df-label font-medium">Stage Name (optional)</label>
       <input
-        className="w-full p-2 rounded bg-[#f3f3f3] text-[#1e1e1e] border border-[#dcdcdc] mb-4 placeholder-[#6f6f6f]"
+        className="df-input w-full p-2 rounded mb-4"
         placeholder="builder, production..."
         value={stage.stageName}
         onChange={(e) => updateField("stageName", e.target.value)}
@@ -115,16 +115,16 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete 
 
       {/* Commands */}
       <div className="flex justify-between items-center mb-2">
-        <label className="text-[#1e1e1e] font-medium">Commands</label>
+        <label className="df-label font-medium">Commands</label>
         <button
           onClick={addCommand}
-          className="px-3 py-1 rounded bg-[#0078d4] text-white text-sm hover:bg-[#005a9e]">
+          className="px-3 py-1 rounded text-sm df-button-primary">
           + Add Command
         </button>
       </div>
 
       {stage.commands.length === 0 ? (
-        <div className="border border-[#dcdcdc] bg-[#f8f8f8] text-[#555] text-sm p-4 rounded-lg italic">
+        <div className="df-card df-border-dashed text-sm p-4 italic">
           No commands added yet. Click <span className="font-medium">"Add Command"</span> to start.
         </div>
       ) : (
@@ -138,7 +138,7 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete 
             />
 
             <input
-              className="flex-1 p-2.5 rounded-lg bg-[#f3f3f3] border border-[#dcdcdc] text-[#1e1e1e] text-sm placeholder-[#6f6f6f]"
+              className="df-input flex-1 p-2.5 rounded-lg text-sm"
               placeholder="Enter value..."
               value={cmd.value}
               onChange={(e) => updateCommand(cmd.id, { value: e.target.value })}
@@ -146,7 +146,7 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete 
 
             <button
               onClick={() => deleteCommand(cmd.id)}
-              className="text-[#d13438] hover:opacity-75"
+              className="df-danger hover:opacity-75"
               title="Delete command">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
