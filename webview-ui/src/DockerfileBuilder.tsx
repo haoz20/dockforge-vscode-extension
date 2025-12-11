@@ -6,8 +6,11 @@ import ValidationPanel from "./ValidationPanel";
 
 export default function DockerfileBuilder() {
   const [stages, setStages] = useState<StageData[]>([]);
-  const [imageName, setImageName] = useState("my-app");
-  const [imageTag, setImageTag] = useState("latest");
+  const [imageName, setImageName] = useState("");
+  const [imageTag, setImageTag] = useState("");
+  const [containerName, setContainerName] = useState("");
+  const [portMapping, setPortMapping] = useState("");
+  const [envVariables, setEnvVariables] = useState("");
 
   const addStage = () => {
     const newStage: StageData = {
@@ -30,6 +33,16 @@ export default function DockerfileBuilder() {
   const handleRunTestBuild = () => {
     console.log("Running test build with:", { imageName, imageTag, stages });
     // TODO: Implement docker build logic
+  };
+
+  const handleBuildImage = () => {
+    console.log("Building image with:", { imageName, imageTag, stages });
+    // TODO: Implement docker build logic
+  };
+
+  const handleRunContainer = () => {
+    console.log("Running container with:", { imageName, imageTag, containerName, portMapping, envVariables });
+    // TODO: Implement docker run logic
   };
 
   const results = validateDockerfile(stages);
@@ -83,6 +96,75 @@ export default function DockerfileBuilder() {
           <VSCodeButton className="run-test-button" onClick={handleRunTestBuild}>
             <span className="button-icon">▶</span> Run Test Build
           </VSCodeButton>
+        </div>
+      </div>
+
+      {/* Build & Run Image Section */}
+      <div className="build-run-section">
+        <VSCodeDivider />
+        <h2 className="section-title">Build & Run Image</h2>
+
+        <div className="build-run-form">
+          <div className="form-row">
+            <div className="form-field">
+              <label className="field-label">
+                Image Name <span className="required">*</span>
+              </label>
+              <VSCodeTextField
+                value={imageName}
+                onInput={(e: any) => setImageName(e.target.value)}
+                placeholder="my-app"
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="field-label">Tag</label>
+              <VSCodeTextField
+                value={imageTag}
+                onInput={(e: any) => setImageTag(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-field">
+              <label className="field-label">Container Name</label>
+              <VSCodeTextField
+                value={containerName}
+                onInput={(e: any) => setContainerName(e.target.value)}
+                placeholder="Auto-generated"
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="field-label">Port Mapping</label>
+              <VSCodeTextField
+                value={portMapping}
+                onInput={(e: any) => setPortMapping(e.target.value)}
+                placeholder="8080:80"
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-field full-width">
+              <label className="field-label">Environment Variables (comma-separated)</label>
+              <VSCodeTextField
+                value={envVariables}
+                onInput={(e: any) => setEnvVariables(e.target.value)}
+                placeholder="NODE_ENV=production,PORT=3000"
+              />
+            </div>
+          </div>
+
+          <div className="button-group">
+            <VSCodeButton className="build-button" onClick={handleBuildImage}>
+              <span className="button-icon">🔨</span> Build Image
+            </VSCodeButton>
+            <VSCodeButton className="run-button green-button" onClick={handleRunContainer}>
+              <span className="button-icon">▶</span> Run Container
+            </VSCodeButton>
+          </div>
         </div>
       </div>
 

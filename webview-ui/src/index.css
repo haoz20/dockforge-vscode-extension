@@ -137,6 +137,14 @@ body {
   margin-top: 32px;
 }
 
+.build-run-section {
+  margin-top: 32px;
+}
+
+.build-run-form {
+  display: block;
+}
+
 .section-title {
   margin-top: 16px;
   margin-bottom: 16px;
@@ -190,4 +198,47 @@ vscode-button.run-test-button::part(control) {
 
 .button-icon {
   margin-right: 8px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.build-button,
+.run-button {
+  display: inline-block !important;
+  width: auto !important;
+  flex: none !important;
+}
+
+vscode-button.build-button,
+vscode-button.run-button {
+  width: auto !important;
+  display: inline-block !important;
+}
+
+vscode-button.build-button::part(control),
+vscode-button.run-button::part(control) {
+  width: auto !important;
+  flex: none !important;
+}
+
+.green-button {
+  background-color: var(--vscode-button-secondaryBackground) !important;
+}
+
+vscode-button.green-button::part(control) {
+  background-color: #16a085 !important;
+  border-color: #16a085 !important;
+}
+
+vscode-button.green-button:hover::part(control) {
+  background-color: #138d75 !important;
+  border-color: #138d75 !important;
 }
