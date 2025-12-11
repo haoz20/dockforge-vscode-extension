@@ -143,11 +143,30 @@ body {
 }
 
 .test-build-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: block;
 }
 
+.form-row {
+  margin-bottom: 16px;
+}
+
+.run-test-button {
+  display: inline-block !important;
+  width: auto !important;
+  max-width: none !important;
+  flex: none !important;
+}
+
+vscode-button.run-test-button {
+  width: auto !important;
+  display: inline-block !important;
+}
+
+vscode-button.run-test-button::part(control) {
+  width: auto !important;
+  max-width: none !important;
+  flex: none !important;
+}
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui-toolkit/react";
 import { StageCard, StageData } from "./StageCard";
 import { validateDockerfile } from "./utilities/validations";
-import ValidationPanel from "./ValidationPanel";  
+import ValidationPanel from "./ValidationPanel";
 
 export default function DockerfileBuilder() {
   const [stages, setStages] = useState<StageData[]>([]);
@@ -20,9 +20,7 @@ export default function DockerfileBuilder() {
   };
 
   const updateStage = (updatedStage: StageData) => {
-    setStages(stages.map((stage) =>
-      stage.id === updatedStage.id ? updatedStage : stage
-    ));
+    setStages(stages.map((stage) => (stage.id === updatedStage.id ? updatedStage : stage)));
   };
 
   const deleteStage = (id: string) => {
@@ -45,12 +43,7 @@ export default function DockerfileBuilder() {
 
       {/* Render Stage Cards */}
       {stages.map((stage) => (
-        <StageCard
-          key={stage.id}
-          stage={stage}
-          onUpdate={updateStage}
-          onDelete={deleteStage}
-        />
+        <StageCard key={stage.id} stage={stage} onUpdate={updateStage} onDelete={deleteStage} />
       ))}
 
       {/* Example buttons */}
@@ -63,7 +56,7 @@ export default function DockerfileBuilder() {
       <div className="test-build-section">
         <VSCodeDivider />
         <h2 className="section-title">Test Build Script</h2>
-        
+
         <div className="test-build-form">
           <div className="form-row">
             <div className="form-field">
@@ -87,7 +80,7 @@ export default function DockerfileBuilder() {
             </div>
           </div>
 
-          <VSCodeButton onClick={handleRunTestBuild}>
+          <VSCodeButton className="run-test-button" onClick={handleRunTestBuild}>
             <span className="button-icon">▶</span> Run Test Build
           </VSCodeButton>
         </div>
