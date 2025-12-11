@@ -234,11 +234,11 @@ vscode-button.run-button::part(control) {
 }
 
 vscode-button.green-button::part(control) {
-  background-color: #16a085 !important;
-  border-color: #16a085 !important;
+  background-color: #22c55e !important;
+  border-color: #22c55e !important;
 }
 
 vscode-button.green-button:hover::part(control) {
-  background-color: #138d75 !important;
-  border-color: #138d75 !important;
+  background-color: #16a34a !important;
+  border-color: #16a34a !important;
 }
