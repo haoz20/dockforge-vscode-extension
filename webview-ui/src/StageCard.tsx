@@ -123,7 +123,7 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete 
       <div className="commands-section">
         <div className="commands-header">
           <label className="commands-label">Commands</label>
-          <VSCodeButton appearance="secondary" onClick={addCommand}>
+          <VSCodeButton onClick={addCommand}>
             + Add Command
           </VSCodeButton>
         </div>

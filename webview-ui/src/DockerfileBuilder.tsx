@@ -65,6 +65,11 @@ export default function DockerfileBuilder() {
         <VSCodeButton appearance="secondary">Copy</VSCodeButton>
       </div>
 
+      {/* Validation panel */}
+      <div className="validation-container">
+        <ValidationPanel warnings={results.warnings} suggestions={results.suggestions} />
+      </div>
+
       {/* Test Build Script Section */}
       <div className="test-build-section">
         <VSCodeDivider />
@@ -168,10 +173,6 @@ export default function DockerfileBuilder() {
         </div>
       </div>
 
-      {/* Validation panel */}
-      <div className="validation-container">
-        <ValidationPanel warnings={results.warnings} suggestions={results.suggestions} />
-      </div>
     </div>
   );
 }
