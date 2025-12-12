@@ -1,72 +1,186 @@
-function DockerfileBuilder() {
+import React, { useState, useRef } from "react";
+import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui-toolkit/react";
+import { StageCard, StageData } from "./StageCard";
+import { validateDockerfile } from "./utilities/validations";
+import ValidationPanel from "./ValidationPanel";
+
+export default function DockerfileBuilder() {
+  const [stages, setStages] = useState<StageData[]>([]);
+  const [imageName, setImageName] = useState("");
+  const [imageTag, setImageTag] = useState("");
+  const [containerName, setContainerName] = useState("");
+  const [portMapping, setPortMapping] = useState("");
+  const [envVariables, setEnvVariables] = useState("");
+  const stageCounterRef = useRef(0);
+
+  const addStage = () => {
+    stageCounterRef.current += 1;
+    const newStage: StageData = {
+      id: stageCounterRef.current.toString(),
+      baseImage: "node:18-alpine",
+      stageName: "",
+      commands: [],
+    };
+    setStages([...stages, newStage]);
+  };
+
+  const updateStage = (updatedStage: StageData) => {
+    setStages(stages.map((stage) => (stage.id === updatedStage.id ? updatedStage : stage)));
+  };
+
+  const deleteStage = (id: string) => {
+    setStages(stages.filter((stage) => stage.id !== id));
+  };
+
+  const handleRunTestBuild = () => {
+    console.log("Running test build with:", { imageName, imageTag, stages });
+    // TODO: Implement docker build logic
+  };
+
+  const handleBuildImage = () => {
+    console.log("Building image with:", { imageName, imageTag, stages });
+    // TODO: Implement docker build logic
+  };
+
+  const handleRunContainer = () => {
+    console.log("Running container with:", { imageName, imageTag, containerName, portMapping, envVariables });
+    // TODO: Implement docker run logic
+  };
+
+  const results = validateDockerfile(stages);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-2xl mb-6">
-            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">DockForge</h1>
-          <p className="text-xl text-gray-600">Simplify Your Docker & DevContainer Workflow</p>
-        </div>
+    <div className="container">
+      <div className="header-row">
+        <h1>Dockerfile Builder</h1>
+        <VSCodeButton onClick={addStage}>+ Add Stage</VSCodeButton>
+      </div>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-2 gap-6 mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+      {/* Render Stage Cards */}
+      {stages.map((stage, index) => (
+        <StageCard
+          key={stage.id}
+          stage={stage}
+          stageNumber={index + 1}
+          onUpdate={updateStage}
+          onDelete={deleteStage}
+        />
+      ))}
+
+      {/* Example buttons */}
+      <div className="button-row">
+        <VSCodeButton>Insert to Workspace</VSCodeButton>
+        <VSCodeButton appearance="secondary">Copy</VSCodeButton>
+      </div>
+
+      {/* Validation panel */}
+      <div className="validation-container">
+        <ValidationPanel warnings={results.warnings} suggestions={results.suggestions} />
+      </div>
+
+      {/* Test Build Script Section */}
+      <div className="test-build-section">
+        <VSCodeDivider />
+        <h2 className="section-title">Test Build Script</h2>
+
+        <div className="test-build-form">
+          <div className="form-row">
+            <div className="form-field">
+              <label className="field-label">
+                Image Name <span className="required">*</span>
+              </label>
+              <VSCodeTextField
+                value={imageName}
+                onInput={(e) => setImageName((e.target as HTMLInputElement).value)}
+                placeholder="my-app"
+              />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Dockerfile Builder</h3>
-            <p className="text-gray-600">Create and manage Dockerfiles with an intuitive visual interface. Build multi-stage containers effortlessly.</p>
-          </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-              </svg>
+            <div className="form-field">
+              <label className="field-label">Tag</label>
+              <VSCodeTextField
+                value={imageTag}
+                onInput={(e) => setImageTag((e.target as HTMLInputElement).value)}
+                placeholder="latest"
+              />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">DevContainer Support</h3>
-            <p className="text-gray-600">Seamlessly integrate with VS Code DevContainers for consistent development environments.</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Quick Actions</h3>
-            <p className="text-gray-600">Build, run, and manage containers directly from VS Code with one-click actions.</p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Template Library</h3>
-            <p className="text-gray-600">Access pre-built templates for popular frameworks and languages to get started faster.</p>
-          </div>
-        </div>
-
-        {/* CTA Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-2xl p-8 text-center text-white">
-          <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-blue-100 mb-6 text-lg">Open the command palette and run "DockForge: Show Panel" to begin building your containers.</p>
-          <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-lg">
-            Open DockForge
-          </button>
+          <VSCodeButton className="run-test-button" onClick={handleRunTestBuild}>
+            <span className="button-icon" aria-hidden="true">▶</span> Run Test Build
+          </VSCodeButton>
         </div>
       </div>
+
+      {/* Build & Run Image Section */}
+      <div className="build-run-section">
+        <VSCodeDivider />
+        <h2 className="section-title">Build & Run Image</h2>
+
+        <div className="build-run-form">
+          <div className="form-row">
+            <div className="form-field">
+              <label className="field-label">
+                Image Name <span className="required">*</span>
+              </label>
+              <VSCodeTextField
+                value={imageName}
+                onInput={(e: any) => setImageName(e.target.value)}
+                placeholder="my-app"
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="field-label">Tag</label>
+              <VSCodeTextField
+                value={imageTag}
+                onInput={(e: any) => setImageTag(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-field">
+              <label className="field-label">Container Name</label>
+              <VSCodeTextField
+                value={containerName}
+                onInput={(e: any) => setContainerName(e.target.value)}
+                placeholder="Auto-generated"
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="field-label">Port Mapping</label>
+              <VSCodeTextField
+                value={portMapping}
+                onInput={(e: any) => setPortMapping(e.target.value)}
+                placeholder="8080:80"
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-field full-width">
+              <label className="field-label">Environment Variables (comma-separated)</label>
+              <VSCodeTextField
+                value={envVariables}
+                onInput={(e: any) => setEnvVariables(e.target.value)}
+                placeholder="NODE_ENV=production,PORT=3000"
+              />
+            </div>
+          </div>
+
+          <div className="button-group">
+            <VSCodeButton className="build-button" onClick={handleBuildImage}>
+              <span className="button-icon">🔨</span> Build Image
+            </VSCodeButton>
+            <VSCodeButton className="run-button green-button" onClick={handleRunContainer}>
+              <span className="button-icon">▶</span> Run Container
+            </VSCodeButton>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
-
-export default DockerfileBuilder;

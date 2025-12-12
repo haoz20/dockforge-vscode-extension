@@ -3,7 +3,6 @@ import * as vscode from "vscode";
 export class DockerHubViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "dockforge-dockerhubview";
   private _view?: vscode.WebviewView;
-  
 
   constructor(private readonly _extensionUri: vscode.Uri) {}
 

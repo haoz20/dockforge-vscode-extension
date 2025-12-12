@@ -1,4 +1,3 @@
-import React from "react";
 import DockerfileBuilder from "./DockerfileBuilder";
 import DockerHubBuilder from "./DockerHubBuilder";
 
