@@ -107,7 +107,7 @@ export default function DockerfileBuilder() {
           </div>
 
           <VSCodeButton className="run-test-button" onClick={handleRunTestBuild}>
-            <span className="button-icon">▶</span> Run Test Build
+            <span className="button-icon" aria-hidden="true">▶</span> Run Test Build
           </VSCodeButton>
         </div>
       </div>
