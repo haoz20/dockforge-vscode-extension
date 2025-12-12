@@ -17,6 +17,7 @@ export interface StageData {
 
 interface StageCardProps {
   stage: StageData;
+  stageNumber: number;
   onUpdate: (updatedStage: StageData) => void;
   onDelete: (id: string) => void;
 }
@@ -58,7 +59,7 @@ const baseImageOptions = [
   "postgres:15-alpine",
 ];
 
-export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete }) => {
+export const StageCard: React.FC<StageCardProps> = ({ stage, stageNumber, onUpdate, onDelete }) => {
   const updateField = (field: keyof StageData, value: any) => {
     onUpdate({ ...stage, [field]: value });
   };
@@ -89,7 +90,7 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete 
   return (
     <div className="stage-card">
       <div className="stage-header">
-        <h2>Stage {stage.id}</h2>
+        <h2>Stage {stageNumber}</h2>
         <VSCodeButton appearance="icon" onClick={() => onDelete(stage.id)} title="Delete stage">
           ✕
         </VSCodeButton>
@@ -115,7 +116,7 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete 
           style={{ width: "100%" }}
           placeholder="builder, production..."
           value={stage.stageName}
-          onInput={(e: any) => updateField("stageName", e.target.value)}
+          onInput={(e) => updateField("stageName", (e.target as HTMLInputElement).value)}
         />
       </div>
 
@@ -146,7 +147,7 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, onUpdate, onDelete 
                 className="command-input"
                 placeholder="Enter value..."
                 value={cmd.value}
-                onInput={(e: any) => updateCommand(cmd.id, { value: e.target.value })}
+                onInput={(e) => updateCommand(cmd.id, { value: (e.target as HTMLInputElement).value })}
               />
 
               <VSCodeButton

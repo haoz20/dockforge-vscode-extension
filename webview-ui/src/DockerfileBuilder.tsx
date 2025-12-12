@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui-toolkit/react";
 import { StageCard, StageData } from "./StageCard";
 import { validateDockerfile } from "./utilities/validations";
@@ -11,10 +11,12 @@ export default function DockerfileBuilder() {
   const [containerName, setContainerName] = useState("");
   const [portMapping, setPortMapping] = useState("");
   const [envVariables, setEnvVariables] = useState("");
+  const stageCounterRef = useRef(0);
 
   const addStage = () => {
+    stageCounterRef.current += 1;
     const newStage: StageData = {
-      id: (stages.length + 1).toString(),
+      id: stageCounterRef.current.toString(),
       baseImage: "node:18-alpine",
       stageName: "",
       commands: [],
@@ -55,8 +57,14 @@ export default function DockerfileBuilder() {
       </div>
 
       {/* Render Stage Cards */}
-      {stages.map((stage) => (
-        <StageCard key={stage.id} stage={stage} onUpdate={updateStage} onDelete={deleteStage} />
+      {stages.map((stage, index) => (
+        <StageCard
+          key={stage.id}
+          stage={stage}
+          stageNumber={index + 1}
+          onUpdate={updateStage}
+          onDelete={deleteStage}
+        />
       ))}
 
       {/* Example buttons */}
@@ -83,7 +91,7 @@ export default function DockerfileBuilder() {
               </label>
               <VSCodeTextField
                 value={imageName}
-                onInput={(e: any) => setImageName(e.target.value)}
+                onInput={(e) => setImageName((e.target as HTMLInputElement).value)}
                 placeholder="my-app"
               />
             </div>
@@ -92,7 +100,7 @@ export default function DockerfileBuilder() {
               <label className="field-label">Tag</label>
               <VSCodeTextField
                 value={imageTag}
-                onInput={(e: any) => setImageTag(e.target.value)}
+                onInput={(e) => setImageTag((e.target as HTMLInputElement).value)}
                 placeholder="latest"
               />
             </div>
