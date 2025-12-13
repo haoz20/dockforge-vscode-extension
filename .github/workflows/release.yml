@@ -2,57 +2,74 @@ name: Release Extension
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
 
-      - name: Setup Node.js
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: npm
 
       - name: Install root dependencies
         run: npm ci
 
       - name: Install webview-ui dependencies
-        run: |
-          cd webview-ui
-          npm ci
+        run: npm ci --prefix webview-ui
 
       - name: Build webview-ui
-        run: |
-          cd webview-ui
-          npm run build
+        run: npm run build --prefix webview-ui
 
       - name: Compile extension
         run: npm run compile
 
-      - name: Install vsce
-        run: npm install -g @vscode/vsce
-
-      - name: Package extension
-        run: vsce package
-
-      - name: Publish to VS Code Marketplace
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: |
-          vsce publish -p $VSCE_PAT patch
+      - name: Package VSIX
+        run: npx @vscode/vsce package
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v4
         with:
           name: vsix-package
           path: "*.vsix"
+
+      - name: Detect version change in package.json
+        id: versioncheck
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # If there's no parent commit (rare on main), treat as version changed.
+          if ! git rev-parse HEAD^ >/dev/null 2>&1; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          old_version="$(git show HEAD^:package.json | node -p 'JSON.parse(fs.readFileSync(0,"utf8")).version')"
+          new_version="$(cat package.json | node -p 'JSON.parse(fs.readFileSync(0,"utf8")).version')"
+
+          echo "old=$old_version" >> "$GITHUB_OUTPUT"
+          echo "new=$new_version" >> "$GITHUB_OUTPUT"
+
+          if [[ "$old_version" != "$new_version" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to VS Code Marketplace
+        if: steps.versioncheck.outputs.changed == 'true'
+        run: npx @vscode/vsce publish -p "${{ secrets.VSCE_PAT }}"
+
+      - name: Skip publish (no version change)
+        if: steps.versioncheck.outputs.changed != 'true'
+        run: echo "No version change detected; skipping publish."
