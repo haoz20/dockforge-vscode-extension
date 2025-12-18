@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
-
+import { DockForgePanel } from './panels/DockForgePanel';
 class DockerfileTreeItem extends vscode.TreeItem {
+    public webViewPanel?: DockForgePanel;
+
     constructor(
         public readonly label: string,
         public readonly id: string
