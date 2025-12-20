@@ -2,14 +2,18 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DockerfileTreeItem } from './DockerfileTreeItem';
+import { DockForgePanel } from './panels/DockForgePanel';
 
 export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<DockerfileTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<DockerfileTreeItem | undefined | null | void> = new vscode.EventEmitter<DockerfileTreeItem | undefined | null | void>();
   readonly onDidChangeTreeData: vscode.Event<DockerfileTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
   private dockerfileItems: DockerfileTreeItem[] = [];
+  private extensionUri: vscode.Uri;
 
-  constructor(private workspaceRoot: string) {}
+  constructor(private workspaceRoot: string, extensionUri: vscode.Uri) {
+    this.extensionUri = extensionUri;
+  }
 
   refresh(): void {
     this._onDidChangeTreeData.fire();
@@ -32,21 +36,39 @@ export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<Docke
   /**
    * Add a new Dockerfile tree item
    */
-  addDockerfile(name: string, description?: string): void {
+  addDockerfile(name: string, description?: string): DockerfileTreeItem {
     const newItem = new DockerfileTreeItem(name, `${name}-${Date.now()}`);
     if (description) {
       newItem.description = description;
     }
     this.dockerfileItems.push(newItem);
     this.refresh();
+    return newItem;
+  }
+
+  /**
+   * Open the Dockerfile builder for a specific tree item
+   */
+  openDockerfileBuilder(treeItem: DockerfileTreeItem): void {
+    // Create or reveal panel for this specific Dockerfile
+    const panel = DockForgePanel.render(this.extensionUri, treeItem.id, treeItem.label);
+    treeItem.webViewPanel = panel;
   }
 
   /**
    * Remove a Dockerfile tree item by label
    */
   removeDockerfile(label: string): void {
-    this.dockerfileItems = this.dockerfileItems.filter(item => item.label !== label);
-    this.refresh();
+    const itemToRemove = this.dockerfileItems.find(item => item.label === label);
+    
+    if (itemToRemove) {
+      // Close the associated webview panel
+      DockForgePanel.closePanel(itemToRemove.id);
+      
+      // Remove from tree
+      this.dockerfileItems = this.dockerfileItems.filter(item => item.label !== label);
+      this.refresh();
+    }
   }
 
   /**

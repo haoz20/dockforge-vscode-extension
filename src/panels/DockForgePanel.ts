@@ -13,9 +13,12 @@ import { getNonce } from "../utilities/getNonce";
  * - Setting message listeners so data can be passed between the webview and extension
  */
 export class DockForgePanel {
-  public static currentPanel: DockForgePanel | undefined;
+  public static panels: Map<string, DockForgePanel> = new Map();
+  // public static currentPanel: DockForgePanel | undefined;
   private readonly _panel: WebviewPanel;
   private _disposables: Disposable[] = [];
+  private readonly _dockerfileId: string;
+  private readonly _dockerfileName: string;
 
   /**
    * The DockForgePanel class private constructor (called only from the render method).
@@ -23,8 +26,10 @@ export class DockForgePanel {
    * @param panel A reference to the webview panel
    * @param extensionUri The URI of the directory containing the extension
    */
-  private constructor(panel: WebviewPanel, extensionUri: Uri) {
+  private constructor(panel: WebviewPanel, extensionUri: Uri, dockerfileID: string, dockerfileName: string) {
     this._panel = panel;
+    this._dockerfileId = dockerfileID;
+    this._dockerfileName = dockerfileName;
 
     // Set an event listener to listen for when the panel is disposed (i.e. when the user closes
     // the panel or when the panel is closed programmatically)
@@ -43,37 +48,66 @@ export class DockForgePanel {
    *
    * @param extensionUri The URI of the directory containing the extension.
    */
-  public static render(extensionUri: Uri) {
-    if (DockForgePanel.currentPanel) {
-      // If the webview panel already exists reveal it
-      DockForgePanel.currentPanel._panel.reveal(ViewColumn.One);
-    } else {
-      // If a webview panel does not already exist create and show a new one
-      const panel = window.createWebviewPanel(
-        // Panel view type
-        "showDockForge",
-        // Panel title
-        "DockForge",
-        // The editor column the panel should be displayed in
-        ViewColumn.One,
-        // Extra panel configurations
-        {
-          // Enable JavaScript in the webview
-          enableScripts: true,
-          // Restrict the webview to only load resources from the `out` and `webview-ui/build` directories
-          localResourceRoots: [Uri.joinPath(extensionUri, "out"), Uri.joinPath(extensionUri, "webview-ui/build")],
-        }
-      );
+  public static render(extensionUri: Uri, dockerfileId: string, dockerfileName: string) {
+    const existingPanel = DockForgePanel.panels.get(dockerfileId);
+    // if (DockForgePanel.currentPanel) {
+    //   // If the webview panel already exists reveal it
+    //   DockForgePanel.currentPanel._panel.reveal(ViewColumn.One);
+    // } else {
+    //   // If a webview panel does not already exist create and show a new one
+    //   const panel = window.createWebviewPanel(
+    //     // Panel view type
+    //     "showDockForge",
+    //     // Panel title
+    //     "DockForge",
+    //     // The editor column the panel should be displayed in
+    //     ViewColumn.One,
+    //     // Extra panel configurations
+    //     {
+    //       // Enable JavaScript in the webview
+    //       enableScripts: true,
+    //       // Restrict the webview to only load resources from the `out` and `webview-ui/build` directories
+    //       localResourceRoots: [Uri.joinPath(extensionUri, "out"), Uri.joinPath(extensionUri, "webview-ui/build")],
+    //     }
+    //   );
+    if (existingPanel) {
+      // If panel already exists for Dockerfile, reveal
+      existingPanel._panel.reveal(ViewColumn.One);
+      return existingPanel;
+    }
 
-      DockForgePanel.currentPanel = new DockForgePanel(panel, extensionUri);
+    const panel = window.createWebviewPanel(
+      `dockforge-${dockerfileId}`,
+      `DockForge - ${dockerfileName}`,
+      ViewColumn.One,
+      {
+        enableScripts: true,
+        localResourceRoots: [Uri.joinPath(extensionUri, "out"), Uri.joinPath(extensionUri, "webview-ui/build")],
+      }
+    );
+
+    const dockforgePanel = new DockForgePanel(panel, extensionUri, dockerfileId, dockerfileName);
+    DockForgePanel.panels.set(dockerfileId, dockforgePanel);
+    return dockforgePanel;
+  }
+
+  public static closePanel(dockerfileId: string) {
+    const panel = DockForgePanel.panels.get(dockerfileId);
+    if (panel) {
+      panel.dispose();
     }
   }
+
+  public static getPanel(dockerfileId: string): DockForgePanel | undefined {
+    return DockForgePanel.panels.get(dockerfileId);
+  }
+  
 
   /**
    * Cleans up and disposes of webview resources when the webview panel is closed.
    */
   public dispose() {
-    DockForgePanel.currentPanel = undefined;
+    DockForgePanel.panels.delete(this._dockerfileId);
 
     // Dispose of the current webview panel
     this._panel.dispose();
@@ -118,7 +152,7 @@ export class DockForgePanel {
                    style-src ${webview.cspSource};
                    script-src 'nonce-${nonce}';">
         <link rel="stylesheet" type="text/css" href="${stylesUri}">
-        <title>DockForge</title>
+        <title>DockForge - ${this._dockerfileName}</title>
       </head>
       <body>
         <div id="root"></div>
@@ -126,6 +160,8 @@ export class DockForgePanel {
         <!-- IMPORTANT: App.tsx needs this -->
         <script nonce="${nonce}">
           window.dockforgePage = "dockforge-home";
+          window.dockerfileId = "${this._dockerfileId}";
+          window.dockerfileName = "${this._dockerfileName}";
         </script>
 
         <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
