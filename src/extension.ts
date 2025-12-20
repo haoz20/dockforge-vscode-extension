@@ -63,7 +63,7 @@ export function activate(context: ExtensionContext) {
     async (treeItem: any) => {
       if (treeItem && treeItem.label) {
         try {
-          await dockerfileTreeDataProvider.removeDockerfile(treeItem.label);
+          await dockerfileTreeDataProvider.removeDockerfile(treeItem.id);
           window.showInformationMessage(`Deleted: ${treeItem.label}`);
         } catch (error) {
           window.showErrorMessage(
