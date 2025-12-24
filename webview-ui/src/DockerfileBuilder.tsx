@@ -1,8 +1,19 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui-toolkit/react";
 import { StageCard, StageData } from "./StageCard";
 import { validateDockerfile } from "./utilities/validations";
 import ValidationPanel from "./ValidationPanel";
+import { DockerfileData, DockerStage, DockerCommandType } from "./types/DockerfileData";
+import { vscode } from "./utilities/vscode";
+
+// Extend window interface
+declare global {
+  interface Window {
+    dockerfileId?: string;
+    dockerfileName?: string;
+    dockerfileData?: DockerfileData | null;
+  }
+}
 
 export default function DockerfileBuilder() {
   const [stages, setStages] = useState<StageData[]>([]);
@@ -12,6 +23,135 @@ export default function DockerfileBuilder() {
   const [portMapping, setPortMapping] = useState("");
   const [envVariables, setEnvVariables] = useState("");
   const stageCounterRef = useRef(0);
+
+  // Load initial data from window or request it from extension
+  useEffect(() => {
+    // Load data from window object if available
+    if (window.dockerfileData) {
+      loadDockerfileData(window.dockerfileData);
+    } else {
+      // Request data from extension
+      vscode.postMessage({ command: "requestDockerfileData" });
+    }
+
+    // Listen for messages from extension
+    const messageHandler = (event: MessageEvent) => {
+      const message = event.data;
+      if (message.command === "loadDockerfileData" && message.data) {
+        loadDockerfileData(message.data);
+      }
+    };
+
+    window.addEventListener("message", messageHandler);
+    return () => window.removeEventListener("message", messageHandler);
+  }, []);
+
+  // Load Dockerfile data into state
+  const loadDockerfileData = (data: DockerfileData) => {
+    if (!data) return;
+
+    // Load stages
+    if (data.stages && data.stages.length > 0) {
+      const loadedStages: StageData[] = data.stages.map((stage: DockerStage, index: number) => ({
+        id: stage.id || `stage-${index + 1}`,
+        baseImage: stage.baseImage || "node:18-alpine",
+        stageName: stage.stageName,
+        commands: stage.commands.map(cmd => ({
+          id: cmd.id || crypto.randomUUID(),
+          type: cmd.type,
+          value: cmd.value
+        }))
+      }));
+      setStages(loadedStages);
+      stageCounterRef.current = loadedStages.length;
+    }
+
+    // Load runtime config
+    if (data.runtime) {
+      setImageName(data.runtime.imageName || "");
+      setImageTag(data.runtime.imageTag || "latest");
+      setContainerName(data.runtime.containerName || "");
+      
+      // Load port mappings
+      if (data.runtime.portMappings && data.runtime.portMappings.length > 0) {
+        const portStr = data.runtime.portMappings
+          .map(p => `${p.hostPort || p.containerPort}:${p.containerPort}`)
+          .join(", ");
+        setPortMapping(portStr);
+      }
+
+      // Load environment variables
+      if (data.runtime.environmentVariables && data.runtime.environmentVariables.length > 0) {
+        const envStr = data.runtime.environmentVariables
+          .map(e => `${e.key}=${e.value}`)
+          .join(",");
+        setEnvVariables(envStr);
+      }
+    }
+  };
+
+  // Save current state to DockerfileData format
+  const saveDockerfileData = () => {
+    const dockerfileId = window.dockerfileId || "default";
+    const dockerfileName = window.dockerfileName || "Dockerfile";
+    const now = new Date().toISOString();
+
+    // Parse port mappings
+    const portMappings = portMapping
+      .split(",")
+      .map(p => p.trim())
+      .filter(p => p.length > 0)
+      .map(p => {
+        const [host, container] = p.split(":");
+        return {
+          containerPort: parseInt(container || host),
+          hostPort: container ? parseInt(host) : undefined,
+          protocol: "tcp" as const
+        };
+      });
+
+    // Parse environment variables
+    const environmentVariables = envVariables
+      .split(",")
+      .map(e => e.trim())
+      .filter(e => e.length > 0)
+      .map(e => {
+        const [key, value] = e.split("=");
+        return { key: key.trim(), value: value?.trim() || "" };
+      });
+
+    const data: DockerfileData = {
+      id: dockerfileId,
+      metadata: {
+        name: dockerfileName,
+        updatedAt: now,
+        createdAt: window.dockerfileData?.metadata?.createdAt || now
+      },
+      stages: stages.map(stage => ({
+        id: stage.id,
+        baseImage: stage.baseImage,
+        stageName: stage.stageName,
+        commands: stage.commands.map(cmd => ({
+          id: cmd.id,
+          type: cmd.type as DockerCommandType,
+          value: cmd.value
+        }))
+      })),
+      runtime: {
+        imageName: imageName || dockerfileName.toLowerCase().replace(/\s+/g, "-"),
+        imageTag: imageTag || "latest",
+        containerName: containerName || undefined,
+        portMappings: portMappings.length > 0 ? portMappings : undefined,
+        environmentVariables: environmentVariables.length > 0 ? environmentVariables : undefined
+      }
+    };
+
+    // Send to extension
+    vscode.postMessage({
+      command: "saveDockerfileData",
+      data
+    });
+  };
 
   const addStage = () => {
     stageCounterRef.current += 1;
@@ -31,6 +171,17 @@ export default function DockerfileBuilder() {
   const deleteStage = (id: string) => {
     setStages(stages.filter((stage) => stage.id !== id));
   };
+
+  // Auto-save on changes (debounced)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (stages.length > 0 || imageName) {
+        saveDockerfileData();
+      }
+    }, 1000); // Save 1 second after last change
+
+    return () => clearTimeout(timer);
+  }, [stages, imageName, imageTag, containerName, portMapping, envVariables]);
 
   const handleRunTestBuild = () => {
     console.log("Running test build with:", { imageName, imageTag, stages });
@@ -53,7 +204,12 @@ export default function DockerfileBuilder() {
     <div className="container">
       <div className="header-row">
         <h1>Dockerfile Builder</h1>
-        <VSCodeButton onClick={addStage}>+ Add Stage</VSCodeButton>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <VSCodeButton onClick={saveDockerfileData} appearance="secondary">
+            Save
+          </VSCodeButton>
+          <VSCodeButton onClick={addStage}>+ Add Stage</VSCodeButton>
+        </div>
       </div>
 
       {/* Render Stage Cards */}

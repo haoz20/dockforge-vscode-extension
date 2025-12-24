@@ -3,14 +3,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DockerfileTreeItem } from './DockerfileTreeItem';
 import { DockForgePanel } from './panels/DockForgePanel';
+import { StoredDockerfile, DockerfileData, createDefaultDockerfileData } from './types/DockerfileData';
 
 const STORAGE_KEY = 'dockforge.dockerfiles';
-
-interface StoredDockerfile {
-  label: string;
-  id: string;
-  description?: string;
-}
 
 export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<DockerfileTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<DockerfileTreeItem | undefined | null | void> = new vscode.EventEmitter<DockerfileTreeItem | undefined | null | void>();
@@ -31,10 +26,10 @@ export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<Docke
    */
   private loadFromMemento(): void {
     const stored = this.memento.get<StoredDockerfile[]>(STORAGE_KEY, []);
-    this.dockerfileItems = stored.map(data => {
-      const item = new DockerfileTreeItem(data.label, data.id);
-      if (data.description) {
-        item.description = data.description;
+    this.dockerfileItems = stored.map(storedItem => {
+      const item = new DockerfileTreeItem(storedItem.label, storedItem.id, storedItem.data);
+      if (storedItem.description) {
+        item.description = storedItem.description;
       }
       return item;
     });
@@ -47,7 +42,9 @@ export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<Docke
     const data: StoredDockerfile[] = this.dockerfileItems.map(item => ({
       label: item.label,
       id: item.id,
-      description: item.description as string | undefined
+      description: item.description as string | undefined,
+      data: item.data,
+      filePath: item.resourceUri?.fsPath
     }));
     await this.memento.update(STORAGE_KEY, data);
   }
@@ -74,7 +71,8 @@ export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<Docke
    * Add a new Dockerfile tree item
    */
   async addDockerfile(name: string, description?: string): Promise<DockerfileTreeItem> {
-    const newItem = new DockerfileTreeItem(name, `${name}-${Date.now()}`);
+    const dockerfileData = createDefaultDockerfileData(name);
+    const newItem = new DockerfileTreeItem(name, dockerfileData.id, dockerfileData);
     if (description) {
       newItem.description = description;
     }
@@ -88,8 +86,19 @@ export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<Docke
    * Open the Dockerfile builder for a specific tree item
    */
   openDockerfileBuilder(treeItem: DockerfileTreeItem): void {
+    // Create callback to handle data updates from webview
+    const onDataUpdate = async (id: string, data: DockerfileData) => {
+      await this.updateDockerfileData(id, data);
+    };
+
     // Create or reveal panel for this specific Dockerfile
-    const panel = DockForgePanel.render(this.extensionUri, treeItem.id, treeItem.label);
+    const panel = DockForgePanel.render(
+      this.extensionUri, 
+      treeItem.id, 
+      treeItem.label,
+      treeItem.data,
+      onDataUpdate
+    );
     treeItem.webViewPanel = panel;
   }
 
@@ -115,6 +124,30 @@ export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<Docke
    */
   getDockerfiles(): DockerfileTreeItem[] {
     return this.dockerfileItems;
+  }
+
+  /**
+   * Update Dockerfile data for a specific item
+   */
+  async updateDockerfileData(id: string, data: DockerfileData): Promise<void> {
+    const item = this.dockerfileItems.find(item => item.id === id);
+    if (item) {
+      item.data = data;
+      // Update timestamp
+      if (item.data.metadata) {
+        item.data.metadata.updatedAt = new Date().toISOString();
+      }
+      await this.saveToMemento();
+      this.refresh();
+    }
+  }
+
+  /**
+   * Get Dockerfile data by ID
+   */
+  getDockerfileData(id: string): DockerfileData | undefined {
+    const item = this.dockerfileItems.find(item => item.id === id);
+    return item?.data;
   }
 
   /**
