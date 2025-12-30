@@ -6,14 +6,14 @@ import { DockerfileTreeDataProvider } from "./DockerfileTreeDataProvider";
 import { checkDockerInstalled } from "./utilities/dockerCheck";
 import { promptInstallDocker } from "./utilities/dockerCheck";
 
-export async function activate(context: ExtensionContext) {
+export function activate(context: ExtensionContext) {
   console.log("DockForge extension is now active!");
 
-  const dockerInstalled = await checkDockerInstalled();
-  if (!dockerInstalled) {
-    await promptInstallDocker();
-    return; // Exit activation if Docker is not installed
-  }
+  checkDockerInstalled().then((installed) => {
+    if (!installed) {
+      promptInstallDocker(); // inform user on activation once 
+    }
+  });
 
   // Get workspace root
   const workspaceRoot = workspace.workspaceFolders?.[0]?.uri.fsPath || "";

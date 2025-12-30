@@ -3,6 +3,11 @@ import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui
 import { StageCard, StageData } from "./StageCard";
 import { validateDockerfile } from "./utilities/validations";
 import ValidationPanel from "./ValidationPanel";
+declare function acquireVsCodeApi(): {
+  postMessage(message: any): void;
+};
+
+const vscode = acquireVsCodeApi();
 
 export default function DockerfileBuilder() {
   const [stages, setStages] = useState<StageData[]>([]);
@@ -33,17 +38,42 @@ export default function DockerfileBuilder() {
   };
 
   const handleRunTestBuild = () => {
-    console.log("Running test build with:", { imageName, imageTag, stages });
+    vscode.postMessage({
+      type: "TEST_BUILD", // Delegate build request to extension host (Docker checks + build execution handled there)
+      payload: {
+        imageName,
+        imageTag,
+        stages,
+      },
+    });
+
     // TODO: Implement docker build logic
   };
 
-  const handleBuildImage = () => {
-    console.log("Building image with:", { imageName, imageTag, stages });
-    // TODO: Implement docker build logic
+    const handleBuildImage = () => {
+      vscode.postMessage({
+        type: "BUILD_IMAGE", // Delegate build request to extension host (Docker checks + build execution handled there)
+        payload: {
+          imageName,
+          imageTag,
+          stages,
+        },
+      });
+
+      // TODO: Implement docker build logic
   };
 
   const handleRunContainer = () => {
-    console.log("Running container with:", { imageName, imageTag, containerName, portMapping, envVariables });
+    vscode.postMessage({
+      type: "RUN_CONTAINER", // Delegate build request to extension host (Docker checks + build execution handled there)
+      payload: {
+        imageName,
+        imageTag,
+        containerName,
+        portMapping,
+        envVariables,
+      },
+    });
     // TODO: Implement docker run logic
   };
 
