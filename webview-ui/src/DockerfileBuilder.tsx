@@ -3,6 +3,11 @@ import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui
 import { StageCard, StageData } from "./StageCard";
 import { validateDockerfile } from "./utilities/validations";
 import ValidationPanel from "./ValidationPanel";
+declare function acquireVsCodeApi(): {
+  postMessage(message: any): void;
+};
+
+const vscode = acquireVsCodeApi();
 
 export default function DockerfileBuilder() {
   const [stages, setStages] = useState<StageData[]>([]);
@@ -47,6 +52,17 @@ export default function DockerfileBuilder() {
     // TODO: Implement docker run logic
   };
 
+  const handleInsertToWorkspace = () => {
+  console.log("Insert clicked");
+  vscode.postMessage({
+    type: "INSERT_TO_WORKSPACE",
+    payload: {
+      // later we will pass stages, base images, commands, etc.
+      // for now this is intentionally simple
+    },
+  });
+};
+
   const results = validateDockerfile(stages);
 
   return (
@@ -69,7 +85,9 @@ export default function DockerfileBuilder() {
 
       {/* Example buttons */}
       <div className="button-row">
-        <VSCodeButton>Insert to Workspace</VSCodeButton>
+        <VSCodeButton onClick={handleInsertToWorkspace}>
+          Insert to Workspace
+        </VSCodeButton>
         <VSCodeButton appearance="secondary">Copy</VSCodeButton>
       </div>
 
