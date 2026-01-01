@@ -16,8 +16,9 @@ import * as path from "path";
  */
 export class DockForgePanel {
   public static currentPanel: DockForgePanel | undefined;
+
   private readonly _panel: WebviewPanel;
-  private _disposables: Disposable[] = [];
+  private readonly _disposables: Disposable[] = [];
 
   private constructor(panel: WebviewPanel, extensionUri: Uri) {
     this._panel = panel;
@@ -29,10 +30,12 @@ export class DockForgePanel {
       extensionUri
     );
 
-    // Webview → extension message handling
     this._setWebviewMessageListener(this._panel.webview);
   }
 
+  /**
+   * Render or reveal DockForge panel
+   */
   public static render(extensionUri: Uri) {
     if (DockForgePanel.currentPanel) {
       DockForgePanel.currentPanel._panel.reveal(ViewColumn.One);
@@ -59,11 +62,25 @@ export class DockForgePanel {
     this._panel.dispose();
 
     while (this._disposables.length) {
-      const disposable = this._disposables.pop();
-      if (disposable) {
-        disposable.dispose();
-      }
+      this._disposables.pop()?.dispose();
     }
+  }
+
+  /**
+   * Always generate:
+   * Dockerfile, Dockerfile1, Dockerfile2, ...
+   */
+  private _getUniqueDockerfilePath(dir: string): string {
+    let counter = 0;
+    let filePath: string;
+
+    do {
+      const suffix = counter === 0 ? "" : counter.toString();
+      filePath = path.join(dir, `Dockerfile${suffix}`);
+      counter++;
+    } while (fs.existsSync(filePath));
+
+    return filePath;
   }
 
   private _getWebviewContent(webview: Webview, extensionUri: Uri) {
@@ -79,42 +96,41 @@ export class DockForgePanel {
       "assets",
       "index.js",
     ]);
-
     const nonce = getNonce();
 
     return /*html*/ `
-      <!DOCTYPE html>
-      <html lang="en">
-        <head>
-          <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <meta http-equiv="Content-Security-Policy"
-            content="default-src 'none';
-                     style-src ${webview.cspSource};
-                     script-src 'nonce-${nonce}';">
-          <link rel="stylesheet" type="text/css" href="${stylesUri}">
-          <title>DockForge</title>
-        </head>
-        <body>
-          <div id="root"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none';
+                 style-src ${webview.cspSource};
+                 script-src 'nonce-${nonce}';">
+  <link rel="stylesheet" type="text/css" href="${stylesUri}">
+  <title>DockForge</title>
+</head>
+<body>
+  <div id="root"></div>
 
-          <script nonce="${nonce}">
-            window.dockforgePage = "dockforge-home";
-          </script>
+  <script nonce="${nonce}">
+    window.dockforgePage = "dockforge-home";
+  </script>
 
-          <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
-        </body>
-      </html>
-    `;
+  <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
+</body>
+</html>
+`;
   }
 
   /**
-   * Message listener: ONLY hello + insert to workspace
+   * Webview → Extension message handling
    */
   private _setWebviewMessageListener(webview: Webview) {
     webview.onDidReceiveMessage(
-      async (message: { command?: string; type?: string; payload?: any }) => {
-        const action = message.type ?? message.command;
+      async (message: { type?: string; payload?: any }) => {
+        const action = message.type;
 
         switch (action) {
           case "hello":
@@ -124,7 +140,7 @@ export class DockForgePanel {
           case "INSERT_TO_WORKSPACE": {
             const warnings: string[] = message.payload?.warnings ?? [];
 
-            // 1. If there are warnings, ask user what to do
+            // 1️⃣ Validation decision
             if (warnings.length > 0) {
               const choice = await window.showWarningMessage(
                 `There are ${warnings.length} validation warning(s).`,
@@ -134,12 +150,11 @@ export class DockForgePanel {
               );
 
               if (choice !== "Insert Anyway") {
-                // User chose to keep editing or closed dialog
                 return;
               }
             }
 
-            // 2. Ask user to select a folder
+            // 2️⃣ Select target folder
             const folders = await window.showOpenDialog({
               canSelectFiles: false,
               canSelectFolders: true,
@@ -148,26 +163,24 @@ export class DockForgePanel {
             });
 
             if (!folders || folders.length === 0) {
-              window.showWarningMessage("No folder selected.");
               return;
             }
 
             const targetDir = folders[0].fsPath;
-            const dockerfilePath = path.join(targetDir, "Dockerfile");
 
-            // 3. Temporary Dockerfile content
+            // 3️⃣ Resolve unique filename
+            const dockerfilePath = this._getUniqueDockerfilePath(targetDir);
+
+            // 4️⃣ Write Dockerfile
             const dockerfileContent = `# Generated by DockForge
-  FROM alpine:latest
-  CMD ["echo", "Hello from DockForge"]
-  `;
+FROM alpine:latest
+CMD ["echo", "Hello from DockForge"]
+`;
 
             try {
-              fs.writeFileSync(dockerfilePath, dockerfileContent, {
-                encoding: "utf8",
-              });
-
+              fs.writeFileSync(dockerfilePath, dockerfileContent, "utf8");
               window.showInformationMessage(
-                `Dockerfile created successfully at:\n${dockerfilePath}`
+                `Dockerfile created successfully:\n${dockerfilePath}`
               );
             } catch (error) {
               window.showErrorMessage(
@@ -181,7 +194,7 @@ export class DockForgePanel {
           }
 
           default:
-            console.warn("Unknown webview message:", action);
+            console.warn("Unknown webview action:", action);
         }
       },
       undefined,
