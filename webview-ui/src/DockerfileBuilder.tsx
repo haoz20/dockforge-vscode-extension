@@ -57,10 +57,9 @@ export default function DockerfileBuilder() {
   vscode.postMessage({
     type: "INSERT_TO_WORKSPACE",
     payload: {
+      stages,
       warnings: results.warnings,
       suggestions: results.suggestions,
-      // later we will pass stages, base images, commands, etc.
-      // for now this is intentionally simple
     },
   });
 };
