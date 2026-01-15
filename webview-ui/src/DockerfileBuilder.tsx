@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui-toolkit/react";
 import { StageCard, StageData } from "./StageCard";
 import { validateDockerfile } from "./utilities/validations";
@@ -24,30 +24,8 @@ export default function DockerfileBuilder() {
   const [envVariables, setEnvVariables] = useState("");
   const stageCounterRef = useRef(0);
 
-  // Load initial data from window or request it from extension
-  useEffect(() => {
-    // Load data from window object if available
-    if (window.dockerfileData) {
-      loadDockerfileData(window.dockerfileData);
-    } else {
-      // Request data from extension
-      vscode.postMessage({ command: "requestDockerfileData" });
-    }
-
-    // Listen for messages from extension
-    const messageHandler = (event: MessageEvent) => {
-      const message = event.data;
-      if (message.command === "loadDockerfileData" && message.data) {
-        loadDockerfileData(message.data);
-      }
-    };
-
-    window.addEventListener("message", messageHandler);
-    return () => window.removeEventListener("message", messageHandler);
-  }, []);
-
   // Load Dockerfile data into state
-  const loadDockerfileData = (data: DockerfileData) => {
+  const loadDockerfileData = useCallback((data: DockerfileData) => {
     if (!data) return;
 
     // Load stages
@@ -88,7 +66,29 @@ export default function DockerfileBuilder() {
         setEnvVariables(envStr);
       }
     }
-  };
+  }, []); // Empty deps - all setState functions and refs are stable
+
+  // Load initial data from window or request it from extension
+  useEffect(() => {
+    // Load data from window object if available
+    if (window.dockerfileData) {
+      loadDockerfileData(window.dockerfileData);
+    } else {
+      // Request data from extension
+      vscode.postMessage({ command: "requestDockerfileData" });
+    }
+
+    // Listen for messages from extension
+    const messageHandler = (event: MessageEvent) => {
+      const message = event.data;
+      if (message.command === "loadDockerfileData" && message.data) {
+        loadDockerfileData(message.data);
+      }
+    };
+
+    window.addEventListener("message", messageHandler);
+    return () => window.removeEventListener("message", messageHandler);
+  }, [loadDockerfileData]); // Add loadDockerfileData as dependency
 
   // Save current state to DockerfileData format
   const saveDockerfileData = () => {
