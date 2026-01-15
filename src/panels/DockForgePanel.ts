@@ -15,7 +15,6 @@ import { DockerfileData } from "../types/DockerfileData";
  */
 export class DockForgePanel {
   public static panels: Map<string, DockForgePanel> = new Map();
-  // public static currentPanel: DockForgePanel | undefined;
   private readonly _panel: WebviewPanel;
   private _disposables: Disposable[] = [];
   private readonly _dockerfileId: string;
@@ -216,8 +215,14 @@ export class DockForgePanel {
             // Save Dockerfile data
             if (message.data && this._onDataUpdate) {
               this._data = message.data;
-              this._onDataUpdate(this._dockerfileId, message.data);
-              window.showInformationMessage(`Saved: ${this._dockerfileName}`);
+              try {
+                this._onDataUpdate(this._dockerfileId, message.data);
+                window.showInformationMessage(`Saved: ${this._dockerfileName}`);
+              } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                window.showErrorMessage(`Failed to save ${this._dockerfileName}: ${errorMessage}`);
+                console.error(`Error saving Dockerfile data for ${this._dockerfileId}:`, error);
+              }
             }
             return;
           
