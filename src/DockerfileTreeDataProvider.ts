@@ -103,7 +103,7 @@ export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<Docke
   }
 
   /**
-   * Remove a Dockerfile tree item by label
+   * Remove a Dockerfile tree item by id
    */
   async removeDockerfile(id: string): Promise<void> {
     const itemToRemove = this.dockerfileItems.find(item => item.id === id);
