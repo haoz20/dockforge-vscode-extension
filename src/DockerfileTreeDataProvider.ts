@@ -2,14 +2,52 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DockerfileTreeItem } from './DockerfileTreeItem';
+import { DockForgePanel } from './panels/DockForgePanel';
+import { StoredDockerfile, DockerfileData, createDefaultDockerfileData } from './types/DockerfileData';
+
+const STORAGE_KEY = 'dockforge.dockerfiles';
 
 export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<DockerfileTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<DockerfileTreeItem | undefined | null | void> = new vscode.EventEmitter<DockerfileTreeItem | undefined | null | void>();
   readonly onDidChangeTreeData: vscode.Event<DockerfileTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
   private dockerfileItems: DockerfileTreeItem[] = [];
+  private extensionUri: vscode.Uri;
+  private memento: vscode.Memento;
 
-  constructor(private workspaceRoot: string) {}
+  constructor(private workspaceRoot: string, extensionUri: vscode.Uri, memento: vscode.Memento) {
+    this.extensionUri = extensionUri;
+    this.memento = memento;
+    this.loadFromMemento();
+  }
+
+  /**
+   * Load Dockerfiles from global state storage
+   */
+  private loadFromMemento(): void {
+    const stored = this.memento.get<StoredDockerfile[]>(STORAGE_KEY, []);
+    this.dockerfileItems = stored.map(storedItem => {
+      const item = new DockerfileTreeItem(storedItem.label, storedItem.id, storedItem.data);
+      if (storedItem.description) {
+        item.description = storedItem.description;
+      }
+      return item;
+    });
+  }
+
+  /**
+   * Save Dockerfiles to global state storage
+   */
+  private async saveToMemento(): Promise<void> {
+    const data: StoredDockerfile[] = this.dockerfileItems.map(item => ({
+      label: item.label,
+      id: item.id,
+      description: item.description as string | undefined,
+      data: item.data,
+      filePath: item.resourceUri?.fsPath
+    }));
+    await this.memento.update(STORAGE_KEY, data);
+  }
 
   refresh(): void {
     this._onDidChangeTreeData.fire();
@@ -32,21 +70,53 @@ export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<Docke
   /**
    * Add a new Dockerfile tree item
    */
-  addDockerfile(name: string, description?: string): void {
-    const newItem = new DockerfileTreeItem(name, `${name}-${Date.now()}`);
+  async addDockerfile(name: string, description?: string): Promise<DockerfileTreeItem> {
+    const dockerfileData = createDefaultDockerfileData(name);
+    const newItem = new DockerfileTreeItem(name, dockerfileData.id, dockerfileData);
     if (description) {
       newItem.description = description;
     }
     this.dockerfileItems.push(newItem);
+    await this.saveToMemento();
     this.refresh();
+    return newItem;
   }
 
   /**
-   * Remove a Dockerfile tree item by label
+   * Open the Dockerfile builder for a specific tree item
    */
-  removeDockerfile(label: string): void {
-    this.dockerfileItems = this.dockerfileItems.filter(item => item.label !== label);
-    this.refresh();
+  openDockerfileBuilder(treeItem: DockerfileTreeItem): void {
+    // Create callback to handle data updates from webview
+    const onDataUpdate = async (id: string, data: DockerfileData) => {
+      await this.updateDockerfileData(id, data);
+    };
+
+    // Create or reveal panel for this specific Dockerfile
+    const panel = DockForgePanel.render(
+      this.extensionUri, 
+      treeItem.id, 
+      treeItem.label,
+      treeItem.data,
+      onDataUpdate
+    );
+    treeItem.webViewPanel = panel;
+  }
+
+  /**
+   * Remove a Dockerfile tree item by id
+   */
+  async removeDockerfile(id: string): Promise<void> {
+    const itemToRemove = this.dockerfileItems.find(item => item.id === id);
+    
+    if (itemToRemove) {
+      // Close the associated webview panel
+      DockForgePanel.closePanel(itemToRemove.id);
+      
+      // Remove from tree
+      this.dockerfileItems = this.dockerfileItems.filter(item => item.id !== id);
+      await this.saveToMemento();
+      this.refresh();
+    }
   }
 
   /**
@@ -54,6 +124,34 @@ export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<Docke
    */
   getDockerfiles(): DockerfileTreeItem[] {
     return this.dockerfileItems;
+  }
+
+  /**
+   * Update Dockerfile data for a specific item
+   */
+  async updateDockerfileData(id: string, data: DockerfileData): Promise<void> {
+    const item = this.dockerfileItems.find(item => item.id === id);
+    if (item) {
+      const updatedAt = new Date().toISOString();
+      const newData: DockerfileData = {
+        ...data,
+        metadata: {
+          ...(data.metadata ?? {}),
+          updatedAt,
+        },
+      };
+      item.data = newData;
+      await this.saveToMemento();
+      this.refresh();
+    }
+  }
+
+  /**
+   * Get Dockerfile data by ID
+   */
+  getDockerfileData(id: string): DockerfileData | undefined {
+    const item = this.dockerfileItems.find(item => item.id === id);
+    return item?.data;
   }
 
   /**
