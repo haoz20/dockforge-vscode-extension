@@ -217,7 +217,10 @@ export class DockForgePanel {
               this._data = message.data;
               try {
                 this._onDataUpdate(this._dockerfileId, message.data);
-                window.showInformationMessage(`Saved: ${this._dockerfileName}`);
+                // Only show notification if explicitly requested (manual save)
+                if (message.showNotification) {
+                  window.showInformationMessage(`Saved: ${this._dockerfileName}`);
+                }
               } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
                 window.showErrorMessage(`Failed to save ${this._dockerfileName}: ${errorMessage}`);

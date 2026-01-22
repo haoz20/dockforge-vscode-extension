@@ -23,6 +23,8 @@ export default function DockerfileBuilder() {
   const [portMapping, setPortMapping] = useState("");
   const [envVariables, setEnvVariables] = useState("");
   const stageCounterRef = useRef(0);
+  const isInitialLoadRef = useRef(true);
+  const isSavingRef = useRef(false);
 
   // Load Dockerfile data into state
   const loadDockerfileData = useCallback((data: DockerfileData) => {
@@ -66,6 +68,12 @@ export default function DockerfileBuilder() {
         setEnvVariables(envStr);
       }
     }
+
+    // Mark that initial load is complete after a small delay
+    // This ensures all state updates have been processed
+    setTimeout(() => {
+      isInitialLoadRef.current = false;
+    }, 50);
   }, []); // Empty deps - all setState functions and refs are stable
 
   // Load initial data from window or request it from extension
@@ -91,7 +99,14 @@ export default function DockerfileBuilder() {
   }, [loadDockerfileData]); // Add loadDockerfileData as dependency
 
   // Save current state to DockerfileData format
-  const saveDockerfileData = () => {
+  const saveDockerfileData = useCallback((showNotification = false) => {
+    // Prevent concurrent saves
+    if (isSavingRef.current) {
+      return;
+    }
+
+    isSavingRef.current = true;
+
     const dockerfileId = window.dockerfileId || "default";
     const dockerfileName = window.dockerfileName || "Dockerfile";
     const now = new Date().toISOString();
@@ -149,9 +164,15 @@ export default function DockerfileBuilder() {
     // Send to extension
     vscode.postMessage({
       command: "saveDockerfileData",
-      data
+      data,
+      showNotification
     });
-  };
+
+    // Reset saving flag after a short delay to allow message to be processed
+    setTimeout(() => {
+      isSavingRef.current = false;
+    }, 100);
+  }, [stages, imageName, imageTag, containerName, portMapping, envVariables]);
 
   const addStage = () => {
     stageCounterRef.current += 1;
@@ -174,6 +195,11 @@ export default function DockerfileBuilder() {
 
   // Auto-save on changes (debounced)
   useEffect(() => {
+    // Skip auto-save on initial load
+    if (isInitialLoadRef.current) {
+      return;
+    }
+
     const timer = setTimeout(() => {
       if (stages.length > 0 || imageName) {
         saveDockerfileData();
@@ -181,7 +207,7 @@ export default function DockerfileBuilder() {
     }, 1000); // Save 1 second after last change
 
     return () => clearTimeout(timer);
-  }, [stages, imageName, imageTag, containerName, portMapping, envVariables]);
+  }, [stages, imageName, imageTag, containerName, portMapping, envVariables, saveDockerfileData]);
 
   const handleRunTestBuild = () => {
     console.log("Running test build with:", { imageName, imageTag, stages });
@@ -205,7 +231,7 @@ export default function DockerfileBuilder() {
       <div className="header-row">
         <h1>Dockerfile Builder</h1>
         <div style={{ display: "flex", gap: "8px" }}>
-          <VSCodeButton onClick={saveDockerfileData} appearance="secondary">
+          <VSCodeButton onClick={() => saveDockerfileData(true)} appearance="secondary">
             Save
           </VSCodeButton>
           <VSCodeButton onClick={addStage}>+ Add Stage</VSCodeButton>
