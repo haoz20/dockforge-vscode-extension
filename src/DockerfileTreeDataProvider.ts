@@ -132,11 +132,15 @@ export class DockerfileTreeDataProvider implements vscode.TreeDataProvider<Docke
   async updateDockerfileData(id: string, data: DockerfileData): Promise<void> {
     const item = this.dockerfileItems.find(item => item.id === id);
     if (item) {
-      item.data = data;
-      // Update timestamp
-      if (item.data.metadata) {
-        item.data.metadata.updatedAt = new Date().toISOString();
-      }
+      const updatedAt = new Date().toISOString();
+      const newData: DockerfileData = {
+        ...data,
+        metadata: {
+          ...(data.metadata ?? {}),
+          updatedAt,
+        },
+      };
+      item.data = newData;
       await this.saveToMemento();
       this.refresh();
     }

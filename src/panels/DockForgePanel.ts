@@ -31,13 +31,13 @@ export class DockForgePanel {
   private constructor(
     panel: WebviewPanel, 
     extensionUri: Uri, 
-    dockerfileID: string, 
+    dockerfileId: string, 
     dockerfileName: string,
     data?: DockerfileData,
     onDataUpdate?: (id: string, data: DockerfileData) => void
   ) {
     this._panel = panel;
-    this._dockerfileId = dockerfileID;
+    this._dockerfileId = dockerfileId;
     this._dockerfileName = dockerfileName;
     this._data = data;
     this._onDataUpdate = onDataUpdate;
@@ -67,26 +67,6 @@ export class DockForgePanel {
     onDataUpdate?: (id: string, data: DockerfileData) => void
   ) {
     const existingPanel = DockForgePanel.panels.get(dockerfileId);
-    // if (DockForgePanel.currentPanel) {
-    //   // If the webview panel already exists reveal it
-    //   DockForgePanel.currentPanel._panel.reveal(ViewColumn.One);
-    // } else {
-    //   // If a webview panel does not already exist create and show a new one
-    //   const panel = window.createWebviewPanel(
-    //     // Panel view type
-    //     "showDockForge",
-    //     // Panel title
-    //     "DockForge",
-    //     // The editor column the panel should be displayed in
-    //     ViewColumn.One,
-    //     // Extra panel configurations
-    //     {
-    //       // Enable JavaScript in the webview
-    //       enableScripts: true,
-    //       // Restrict the webview to only load resources from the `out` and `webview-ui/build` directories
-    //       localResourceRoots: [Uri.joinPath(extensionUri, "out"), Uri.joinPath(extensionUri, "webview-ui/build")],
-    //     }
-    //   );
     if (existingPanel) {
       // If panel already exists for Dockerfile, reveal and update data
       existingPanel._panel.reveal(ViewColumn.One);

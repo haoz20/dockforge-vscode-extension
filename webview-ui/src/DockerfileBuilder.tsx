@@ -151,7 +151,7 @@ export default function DockerfileBuilder() {
       .map(e => e.trim())
       .filter(e => e.length > 0)
       .map(e => {
-        const [key, value] = e.split("=");
+        const [key, value] = e.split("=", 2);
         return { key: key.trim(), value: value?.trim() || "" };
       });
 
