@@ -111,19 +111,39 @@ export default function DockerfileBuilder() {
     const dockerfileName = window.dockerfileName || "Dockerfile";
     const now = new Date().toISOString();
 
-    // Parse port mappings
+    // Parse port mappings with validation
     const portMappings = portMapping
       .split(",")
       .map(p => p.trim())
       .filter(p => p.length > 0)
       .map(p => {
         const [host, container] = p.split(":");
-        return {
-          containerPort: parseInt(container || host),
-          hostPort: container ? parseInt(host) : undefined,
+        const containerPort = parseInt(container || host, 10);
+        const hostPort = container ? parseInt(host, 10) : undefined;
+
+        // Skip invalid entries where parsing failed
+        if (
+          Number.isNaN(containerPort) ||
+          (hostPort !== undefined && Number.isNaN(hostPort))
+        ) {
+          return null;
+        }
+
+        const portMapping: { containerPort: number; hostPort?: number; protocol: "tcp" } = {
+          containerPort,
           protocol: "tcp" as const
         };
-      });
+        
+        if (hostPort !== undefined) {
+          portMapping.hostPort = hostPort;
+        }
+
+        return portMapping;
+      })
+      .filter(
+        (mapping): mapping is { containerPort: number; hostPort?: number; protocol: "tcp" } =>
+          mapping !== null
+      );
 
     // Parse environment variables
     const environmentVariables = envVariables
