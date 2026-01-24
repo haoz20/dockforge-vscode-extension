@@ -4,7 +4,6 @@ import { StageCard, StageData } from "./StageCard";
 import { validateDockerfile } from "./utilities/validations";
 import ValidationPanel from "./ValidationPanel";
 import { DockerfileData, DockerStage, DockerCommandType } from "./types/DockerfileData";
-import { vscode } from "./utilities/vscode";
 
 // Extend window interface
 declare global {
