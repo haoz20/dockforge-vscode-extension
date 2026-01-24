@@ -1,17 +1,18 @@
-import { Disposable, Webview, WebviewPanel, window, Uri, ViewColumn } from "vscode";
+import {
+  Disposable,
+  Webview,
+  WebviewPanel,
+  window,
+  Uri,
+  ViewColumn,
+} from "vscode";
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
 import { DockerfileData } from "../types/DockerfileData";
+import { ensureDockerReady } from "../utilities/dockerCheck";
 
 /**
  * This class manages the state and behavior of DockForge webview panels.
- *
- * It contains all the data and methods for:
- *
- * - Creating and rendering DockForge webview panels
- * - Properly cleaning up and disposing of webview resources when the panel is closed
- * - Setting the HTML (and by proxy CSS/JavaScript) content of the webview panel
- * - Setting message listeners so data can be passed between the webview and extension
  */
 export class DockForgePanel {
   public static panels: Map<string, DockForgePanel> = new Map();
@@ -42,14 +43,14 @@ export class DockForgePanel {
     this._data = data;
     this._onDataUpdate = onDataUpdate;
 
-    // Set an event listener to listen for when the panel is disposed (i.e. when the user closes
-    // the panel or when the panel is closed programmatically)
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    // Set the HTML content for the webview panel
-    this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
+    this._panel.webview.html = this._getWebviewContent(
+      this._panel.webview,
+      extensionUri
+    );
 
-    // Set an event listener to listen for messages passed from the webview context
+    // ✅ Correct place for all webview → extension logic
     this._setWebviewMessageListener(this._panel.webview);
   }
 
@@ -105,16 +106,12 @@ export class DockForgePanel {
   }
   
 
-  /**
-   * Cleans up and disposes of webview resources when the webview panel is closed.
-   */
   public dispose() {
     DockForgePanel.panels.delete(this._dockerfileId);
 
     // Dispose of the current webview panel
     this._panel.dispose();
 
-    // Dispose of all disposables (i.e. commands) for the current webview panel
     while (this._disposables.length) {
       const disposable = this._disposables.pop();
       if (disposable) {
@@ -123,73 +120,103 @@ export class DockForgePanel {
     }
   }
 
-  /**
-   * Defines and returns the HTML that should be rendered within the webview panel.
-   *
-   * @remarks This is also the place where references to the React webview build files
-   * are created and inserted into the webview HTML.
-   *
-   * @param webview A reference to the extension webview
-   * @param extensionUri The URI of the directory containing the extension
-   * @returns A template string literal containing the HTML that should be
-   * rendered within the webview panel
-   */
   private _getWebviewContent(webview: Webview, extensionUri: Uri) {
-    // The CSS file from the React build output
-    const stylesUri = getUri(webview, extensionUri, ["webview-ui", "build", "assets", "index.css"]);
-    // The JS file from the React build output
-    const scriptUri = getUri(webview, extensionUri, ["webview-ui", "build", "assets", "index.js"]);
+    const stylesUri = getUri(webview, extensionUri, [
+      "webview-ui",
+      "build",
+      "assets",
+      "index.css",
+    ]);
+    const scriptUri = getUri(webview, extensionUri, [
+      "webview-ui",
+      "build",
+      "assets",
+      "index.js",
+    ]);
 
     const nonce = getNonce();
 
-    // Tip: Install the es6-string-html VS Code extension to enable code highlighting below
-  return /*html*/ `
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta http-equiv="Content-Security-Policy"
-          content="default-src 'none';
-                   style-src ${webview.cspSource};
-                   script-src 'nonce-${nonce}';">
-        <link rel="stylesheet" type="text/css" href="${stylesUri}">
-        <title>DockForge - ${this._dockerfileName}</title>
-      </head>
-      <body>
-        <div id="root"></div>
+    return /*html*/ `
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <meta http-equiv="Content-Security-Policy"
+            content="default-src 'none';
+                     style-src ${webview.cspSource};
+                     script-src 'nonce-${nonce}';">
+          <link rel="stylesheet" type="text/css" href="${stylesUri}">
+          <title>DockForge - ${this._dockerfileName}</title>
+        </head>
+        <body>
+          <div id="root"></div>
 
-        <!-- IMPORTANT: App.tsx needs this -->
-        <script nonce="${nonce}">
-          window.dockforgePage = "dockforge-home";
+          <script nonce="${nonce}">
+            window.dockforgePage = "dockforge-home";
           window.dockerfileId = "${this._dockerfileId}";
           window.dockerfileName = "${this._dockerfileName}";
           window.dockerfileData = ${this._data ? JSON.stringify(this._data) : 'null'};
-        </script>
+          </script>
 
-        <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
-      </body>
-    </html>
-  `;
+          <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
+        </body>
+      </html>
+    `;
   }
 
   /**
-   * Sets up an event listener to listen for messages passed from the webview context and
-   * executes code based on the message that is recieved.
-   *
-   * @param webview A reference to the extension webview
-   * @param context A reference to the extension context
+   * ✅ THIS is where Docker checks belong
    */
   private _setWebviewMessageListener(webview: Webview) {
     webview.onDidReceiveMessage(
-      (message: any) => {
-        const command = message.command;
+      async (message: { 
+        command?: string; 
+        type?: string; 
+        payload?: any;
+        data?: any;
+        showNotification?: boolean;
+      }) => {
+        // Support both `command` and `type` to avoid breaking changes
+        const action = message.type ?? message.command;
 
-        switch (command) {
+        switch (action) {
           case "hello":
-            // Code that should run in response to the hello message command
-            window.showInformationMessage(message.text);
+              window.showInformationMessage("Hello from DockForge");
             return;
+
+          case "TEST_BUILD": {
+            if (!(await ensureDockerReady())) return;
+
+            // TODO:
+            // Implement docker test build logic here
+            window.showInformationMessage(
+              "Docker is ready. Test Build can proceed."
+            );
+            return;
+          }
+
+          case "BUILD_IMAGE": {
+            if (!(await ensureDockerReady())) return;
+
+            // TODO:
+            // Implement docker build image logic here
+            window.showInformationMessage(
+              "Docker is ready. Build Image can proceed."
+            );
+            return;
+          }
+
+          case "RUN_CONTAINER": {
+            if (!(await ensureDockerReady())) return;
+
+            // TODO:
+            // Implement docker run container logic here
+            window.showInformationMessage(
+              "Docker is ready. Run Container can proceed."
+            );
+            return;
+          }
           
           case "saveDockerfileData":
             // Save Dockerfile data
@@ -213,8 +240,9 @@ export class DockForgePanel {
             // Send current data to webview
             this.sendDataToWebview();
             return;
-          // Add more switch case statements here as more webview message commands
-          // are created within the webview context (i.e. inside media/main.js)
+
+          default:
+            console.warn("Unknown webview message:", message);
         }
       },
       undefined,
