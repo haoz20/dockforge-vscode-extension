@@ -21,8 +21,12 @@ export function activate(context: ExtensionContext) {
   const dockerHubViewProvider = new DockerHubViewProvider(context.extensionUri);
   
 
-  // Create tree data provider for Dockerfiles
-  const dockerfileTreeDataProvider = new DockerfileTreeDataProvider(workspaceRoot);
+  // Create tree data provider for Dockerfiles with global state memento for persistence
+  const dockerfileTreeDataProvider = new DockerfileTreeDataProvider(
+    workspaceRoot, 
+    context.extensionUri,
+    context.globalState
+  );
 
   // Register the tree view
   const dockerfilesView = window.createTreeView("dockforge-dockerfilesview", {
@@ -42,7 +46,8 @@ export function activate(context: ExtensionContext) {
         return;
       }
 
-      DockForgePanel.render(context.extensionUri);
+      // Use a generic ID for command palette access
+      DockForgePanel.render(context.extensionUri, "default", "Dockerfile");
     }
   );
 
@@ -56,8 +61,10 @@ export function activate(context: ExtensionContext) {
   const openDockerfileBuilderCommand = commands.registerCommand(
     "dockforge.openDockerfileBuilder",
     (treeItem?: any) => {
-      console.log("Opening Dockerfile Builder for:", treeItem?.label);
-      DockForgePanel.render(context.extensionUri);
+      if (treeItem) {
+        console.log("Opening Dockerfile Builder for:", treeItem.label);
+        dockerfileTreeDataProvider.openDockerfileBuilder(treeItem);
+      }
     }
   );
 
@@ -69,10 +76,10 @@ export function activate(context: ExtensionContext) {
   // Delete Dockerfile command
   const deleteDockerfileCommand = commands.registerCommand(
     "dockforge.deleteDockerfile",
-    (treeItem: any) => {
+    async (treeItem: any) => {
       if (treeItem && treeItem.label) {
         try {
-          dockerfileTreeDataProvider.removeDockerfile(treeItem.label);
+          await dockerfileTreeDataProvider.removeDockerfile(treeItem.id);
           window.showInformationMessage(`Deleted: ${treeItem.label}`);
         } catch (error) {
           window.showErrorMessage(
@@ -100,11 +107,11 @@ export function activate(context: ExtensionContext) {
     });
 
     if (dockerfileName) {
-      // Add the new Dockerfile to the tree view
-      dockerfileTreeDataProvider.addDockerfile(dockerfileName.trim()); // Later can add description for custom or import files
+      // Add the new Dockerfile to the tree view and get the tree item
+      const newItem = await dockerfileTreeDataProvider.addDockerfile(dockerfileName.trim());
 
-      // Open the builder panel
-      DockForgePanel.render(context.extensionUri);
+      // Automatically open the builder for the new Dockerfile
+      dockerfileTreeDataProvider.openDockerfileBuilder(newItem);
 
       window.showInformationMessage(`Created: ${dockerfileName}`);
     }
