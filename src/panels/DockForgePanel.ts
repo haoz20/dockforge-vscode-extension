@@ -170,7 +170,13 @@ export class DockForgePanel {
    */
   private _setWebviewMessageListener(webview: Webview) {
     webview.onDidReceiveMessage(
-      async (message: { command?: string; type?: string; payload?: any }) => {
+      async (message: { 
+        command?: string; 
+        type?: string; 
+        payload?: any;
+        data?: any;
+        showNotification?: boolean;
+      }) => {
         // Support both `command` and `type` to avoid breaking changes
         const action = message.type ?? message.command;
 
@@ -206,10 +212,11 @@ export class DockForgePanel {
 
             // TODO:
             // Implement docker run container logic here
-            window.showInformationMessage(message.
+            window.showInformationMessage(
               "Docker is ready. Run Container can proceed."
             );
             return;
+          }
           
           case "saveDockerfileData":
             // Save Dockerfile data
@@ -233,7 +240,6 @@ export class DockForgePanel {
             // Send current data to webview
             this.sendDataToWebview();
             return;
-            }
 
           default:
             console.warn("Unknown webview message:", message);
