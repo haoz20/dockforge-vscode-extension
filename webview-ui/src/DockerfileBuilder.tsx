@@ -508,7 +508,11 @@ export default function DockerfileBuilder() {
       </Panel>
 
       {/* Resize Handle */}
-      <Separator className="resize-handle" />
+      <Separator
+        className="resize-handle"
+        aria-label="Resize panels"
+        aria-orientation="vertical"
+      />
 
       {/* Right Panel - Preview */}
       <Panel defaultSize={50} minSize={30}>
