@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     outDir: "build",
+    chunkSizeWarningLimit: 5000, // Suppress warning (Monaco Editor is inherently large)
     rollupOptions: {
       output: {
         entryFileNames: `assets/[name].js`,
