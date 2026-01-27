@@ -3,7 +3,7 @@
   "publisher": "dockforge",
   "displayName": "DockForge",
   "description": "A VS Code extension for Docker and DevContainer management with React + Vite and the Webview UI Toolkit.",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -22,7 +22,6 @@
         }
       ]
     },
-
     "views": {
       "dockforge": [
         {
