@@ -162,13 +162,66 @@ export class DockForgePanel {
     return lines.join("\n") + "\n";
   }
 
+
+
+  private _getWebviewContent(webview: Webview, extensionUri: Uri) {
+    const stylesUri = getUri(webview, extensionUri, [
+      "webview-ui",
+      "build",
+      "assets",
+      "index.css",
+    ]);
+    const scriptUri = getUri(webview, extensionUri, [
+      "webview-ui",
+      "build",
+      "assets",
+      "index.js",
+    ]);
+    const nonce = getNonce();
+
+    return /*html*/ `
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <meta http-equiv="Content-Security-Policy"
+            content="default-src 'none';
+                     style-src ${webview.cspSource};
+                     script-src 'nonce-${nonce}';">
+          <link rel="stylesheet" type="text/css" href="${stylesUri}">
+          <title>DockForge - ${this._dockerfileName}</title>
+        </head>
+        <body>
+          <div id="root"></div>
+
+          <script nonce="${nonce}">
+            window.dockforgePage = "dockforge-home";
+          window.dockerfileId = "${this._dockerfileId}";
+          window.dockerfileName = "${this._dockerfileName}";
+          window.dockerfileData = ${this._data ? JSON.stringify(this._data) : 'null'};
+          </script>
+
+          <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
+        </body>
+      </html>
+    `;
+  }
+
   /**
-   * Webview → Extension message handling
+   * ✅ Webview → Extension message handling
    */
   private _setWebviewMessageListener(webview: Webview) {
     webview.onDidReceiveMessage(
-      async (message: { type?: string; payload?: any }) => {
-        const action = message.type;
+      async (message: { 
+        command?: string; 
+        type?: string; 
+        payload?: any;
+        data?: any;
+        showNotification?: boolean;
+      }) => {
+        // Support both `command` and `type` to avoid breaking changes
+        const action = message.type ?? message.command;
 
         switch (action) {
           case "hello":
@@ -234,79 +287,6 @@ export class DockForgePanel {
 
             return;
           }
-
-          default:
-            console.warn("Unknown webview action:", action);
-        }
-      },
-      undefined,
-      this._disposables
-    );
-  }
-
-  private _getWebviewContent(webview: Webview, extensionUri: Uri) {
-    const stylesUri = getUri(webview, extensionUri, [
-      "webview-ui",
-      "build",
-      "assets",
-      "index.css",
-    ]);
-    const scriptUri = getUri(webview, extensionUri, [
-      "webview-ui",
-      "build",
-      "assets",
-      "index.js",
-    ]);
-    const nonce = getNonce();
-
-    return /*html*/ `
-      <!DOCTYPE html>
-      <html lang="en">
-        <head>
-          <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <meta http-equiv="Content-Security-Policy"
-            content="default-src 'none';
-                     style-src ${webview.cspSource};
-                     script-src 'nonce-${nonce}';">
-          <link rel="stylesheet" type="text/css" href="${stylesUri}">
-          <title>DockForge - ${this._dockerfileName}</title>
-        </head>
-        <body>
-          <div id="root"></div>
-
-          <script nonce="${nonce}">
-            window.dockforgePage = "dockforge-home";
-          window.dockerfileId = "${this._dockerfileId}";
-          window.dockerfileName = "${this._dockerfileName}";
-          window.dockerfileData = ${this._data ? JSON.stringify(this._data) : 'null'};
-          </script>
-
-          <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
-        </body>
-      </html>
-    `;
-  }
-
-  /**
-   * ✅ THIS is where Docker checks belong
-   */
-  private _setWebviewMessageListener(webview: Webview) {
-    webview.onDidReceiveMessage(
-      async (message: { 
-        command?: string; 
-        type?: string; 
-        payload?: any;
-        data?: any;
-        showNotification?: boolean;
-      }) => {
-        // Support both `command` and `type` to avoid breaking changes
-        const action = message.type ?? message.command;
-
-        switch (action) {
-          case "hello":
-              window.showInformationMessage("Hello from DockForge");
-            return;
 
           case "TEST_BUILD": {
             if (!(await ensureDockerReady())) return;
