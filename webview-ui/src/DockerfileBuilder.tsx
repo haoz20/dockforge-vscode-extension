@@ -13,6 +13,7 @@ declare global {
     dockerfileData?: DockerfileData | null;
   }
 }
+
 declare function acquireVsCodeApi(): {
   postMessage(message: any): void;
 };
@@ -273,6 +274,18 @@ export default function DockerfileBuilder() {
     // TODO: Implement docker run logic
   };
 
+  const handleInsertToWorkspace = () => {
+  console.log("Insert clicked");
+  vscode.postMessage({
+    type: "INSERT_TO_WORKSPACE",
+    payload: {
+      stages,
+      warnings: results.warnings,
+      suggestions: results.suggestions,
+    },
+  });
+};
+
   const results = validateDockerfile(stages);
 
   return (
@@ -300,7 +313,9 @@ export default function DockerfileBuilder() {
 
       {/* Example buttons */}
       <div className="button-row">
-        <VSCodeButton>Insert to Workspace</VSCodeButton>
+        <VSCodeButton onClick={handleInsertToWorkspace}>
+          Insert to Workspace
+        </VSCodeButton>
         <VSCodeButton appearance="secondary">Copy</VSCodeButton>
       </div>
 
