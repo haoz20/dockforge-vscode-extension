@@ -69,6 +69,10 @@ body {
   font-weight: 500;
 }
 
+.command-row vscode-button {
+  flex: 0 0 auto;
+}
+
 .command-row {
   display: flex;
   gap: 12px;
@@ -76,8 +80,20 @@ body {
   margin-bottom: 12px;
 }
 
+.w-28 {
+  width: 145px;
+  flex-shrink: 0;
+}
+
+/* Make the VSCode text field actually grow inside flex */
 .command-input {
   flex: 1;
+  min-width: 0;            /* important: allows shrinking without overflow */
+}
+
+.command-input vscode-text-field,
+.command-input::part(control) {
+  width: 100%;
 }
 
 .delete-icon {

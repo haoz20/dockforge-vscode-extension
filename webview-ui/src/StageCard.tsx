@@ -140,7 +140,7 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, stageNumber, onUpda
                 value={cmd.type}
                 options={commandOptions}
                 onChange={(val) => updateCommand(cmd.id, { type: val })}
-                className="w-40"
+                className="w-28"
               />
 
               <VSCodeTextField
