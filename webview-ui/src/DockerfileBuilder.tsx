@@ -1,10 +1,12 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui-toolkit/react";
+import { Group, Panel, Separator } from "react-resizable-panels";
 import { StageCard, StageData } from "./StageCard";
 import { validateDockerfile } from "./utilities/validations";
 import ValidationPanel from "./ValidationPanel";
 import { DockerfileData, DockerStage, DockerCommandType } from "./types/DockerfileData";
-import { vscode } from "./utilities/vscode";
+import { generateDockerfile } from "./utilities/dockerfileGenerator";
+import DockerfilePreview from "./DockerfilePreview";
 
 // Extend window interface
 declare global {
@@ -14,6 +16,12 @@ declare global {
     dockerfileData?: DockerfileData | null;
   }
 }
+
+declare function acquireVsCodeApi(): {
+  postMessage(message: any): void;
+};
+
+const vscode = acquireVsCodeApi();
 
 export default function DockerfileBuilder() {
   const [stages, setStages] = useState<StageData[]>([]);
@@ -230,33 +238,144 @@ export default function DockerfileBuilder() {
   }, [stages, imageName, imageTag, containerName, portMapping, envVariables, saveDockerfileData]);
 
   const handleRunTestBuild = () => {
-    console.log("Running test build with:", { imageName, imageTag, stages });
+    vscode.postMessage({
+      type: "TEST_BUILD", // Delegate build request to extension host (Docker checks + build execution handled there)
+      payload: {
+        imageName,
+        imageTag,
+        stages,
+      },
+    });
+
     // TODO: Implement docker build logic
   };
 
-  const handleBuildImage = () => {
-    console.log("Building image with:", { imageName, imageTag, stages });
-    // TODO: Implement docker build logic
+    const handleBuildImage = () => {
+      vscode.postMessage({
+        type: "BUILD_IMAGE", // Delegate build request to extension host (Docker checks + build execution handled there)
+        payload: {
+          imageName,
+          imageTag,
+          stages,
+        },
+      });
+
+      // TODO: Implement docker build logic
   };
 
   const handleRunContainer = () => {
-    console.log("Running container with:", { imageName, imageTag, containerName, portMapping, envVariables });
+    vscode.postMessage({
+      type: "RUN_CONTAINER", // Delegate build request to extension host (Docker checks + build execution handled there)
+      payload: {
+        imageName,
+        imageTag,
+        containerName,
+        portMapping,
+        envVariables,
+      },
+    });
     // TODO: Implement docker run logic
   };
 
+  const handleInsertToWorkspace = () => {
+  console.log("Insert clicked");
+  vscode.postMessage({
+    type: "INSERT_TO_WORKSPACE",
+    payload: {
+      stages,
+      warnings: results.warnings,
+      suggestions: results.suggestions,
+    },
+  });
+};
+
   const results = validateDockerfile(stages);
 
+  // Generate Dockerfile text for preview (memoized for performance)
+  const dockerfileText = useMemo(() => {
+    const data: DockerfileData = {
+      id: window.dockerfileId || "preview",
+      metadata: {
+        name: window.dockerfileName || "Dockerfile",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      stages: stages.map(stage => ({
+        id: stage.id,
+        baseImage: stage.baseImage,
+        stageName: stage.stageName,
+        commands: stage.commands.map(cmd => ({
+          id: cmd.id,
+          type: cmd.type as DockerCommandType,
+          value: cmd.value
+        }))
+      })),
+      runtime: {
+        imageName: imageName || "my-app",
+        imageTag: imageTag || "latest",
+        containerName: containerName || undefined,
+        portMappings: portMapping
+          .split(",")
+          .map(p => p.trim())
+          .filter(p => p.length > 0)
+          .map(p => {
+            const [host, container] = p.split(":");
+            const containerPort = parseInt(container || host, 10);
+            const hostPort = container ? parseInt(host, 10) : undefined;
+            
+            if (Number.isNaN(containerPort) || (hostPort !== undefined && Number.isNaN(hostPort))) {
+              return null;
+            }
+            
+            return {
+              containerPort,
+              hostPort,
+              protocol: "tcp" as const
+            };
+          })
+          .filter((m): m is NonNullable<typeof m> => m !== null),
+        environmentVariables: envVariables
+          .split(",")
+          .map(e => e.trim())
+          .filter(e => e.length > 0)
+          .map(e => {
+            const [key, value] = e.split("=", 2);
+            return { key: key.trim(), value: value?.trim() || "" };
+          })
+      }
+    };
+    
+    return generateDockerfile(data);
+  }, [stages, imageName, imageTag, containerName, portMapping, envVariables]);
+
+  const handleCopyDockerfile = () => {
+    vscode.postMessage({
+      type: "SHOW_INFO",
+      message: "Dockerfile copied to clipboard!"
+    });
+  };
+
+  const handleExportDockerfile = () => {
+    vscode.postMessage({
+      command: "exportDockerfile",
+      data: dockerfileText
+    });
+  };
+
   return (
-    <div className="container">
-      <div className="header-row">
-        <h1>Dockerfile Builder</h1>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <VSCodeButton onClick={() => saveDockerfileData(true)} appearance="secondary">
-            Save
-          </VSCodeButton>
-          <VSCodeButton onClick={addStage}>+ Add Stage</VSCodeButton>
-        </div>
-      </div>
+    <Group orientation="horizontal" className="split-view">
+      {/* Left Panel - Builder */}
+      <Panel defaultSize={50} minSize={30}>
+        <div className="container builder-panel">
+          <div className="header-row">
+            <h1>Dockerfile Builder</h1>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <VSCodeButton onClick={() => saveDockerfileData(true)} appearance="secondary">
+                Save
+              </VSCodeButton>
+              <VSCodeButton onClick={addStage}>+ Add Stage</VSCodeButton>
+            </div>
+          </div>
 
       {/* Render Stage Cards */}
       {stages.map((stage, index) => (
@@ -271,7 +390,9 @@ export default function DockerfileBuilder() {
 
       {/* Example buttons */}
       <div className="button-row">
-        <VSCodeButton>Insert to Workspace</VSCodeButton>
+        <VSCodeButton onClick={handleInsertToWorkspace}>
+          Insert to Workspace
+        </VSCodeButton>
         <VSCodeButton appearance="secondary">Copy</VSCodeButton>
       </div>
 
@@ -383,6 +504,24 @@ export default function DockerfileBuilder() {
         </div>
       </div>
 
-    </div>
+        </div>
+      </Panel>
+
+      {/* Resize Handle */}
+      <Separator
+        className="resize-handle"
+        aria-label="Resize panels"
+        aria-orientation="vertical"
+      />
+
+      {/* Right Panel - Preview */}
+      <Panel defaultSize={50} minSize={30}>
+        <DockerfilePreview 
+          dockerfileText={dockerfileText}
+          onCopy={handleCopyDockerfile}
+          onExport={handleExportDockerfile}
+        />
+      </Panel>
+    </Group>
   );
 }

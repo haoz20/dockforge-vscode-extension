@@ -244,3 +244,51 @@ vscode-button.green-button:hover::part(control) {
   background-color: #16a34a !important;
   border-color: #16a34a !important;
 }
+
+/* Split View Layout */
+.split-view {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.builder-panel {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.resize-handle {
+  width: 8px;
+  background-color: var(--vscode-panel-border);
+  cursor: col-resize;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.resize-handle:hover {
+  background-color: var(--vscode-focusBorder);
+}
+
+.resize-handle:active {
+  background-color: var(--vscode-button-background);
+}
+
+/* Add visual indicator on hover */
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 48px;
+  background-color: var(--vscode-foreground);
+  opacity: 0;
+  border-radius: 2px;
+  transition: opacity 0.2s;
+}
+
+.resize-handle:hover::after {
+  opacity: 0.3;
+}

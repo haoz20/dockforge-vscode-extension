@@ -3,10 +3,17 @@ import { DockForgePanel } from "./panels/DockForgePanel";
 import { DockerHubViewProvider } from "./DockerHubViewProvider";
 import { DockerHubPanel } from "./panels/DockerHubPanel";
 import { DockerfileTreeDataProvider } from "./DockerfileTreeDataProvider";
-
+import { checkDockerInstalled } from "./utilities/dockerCheck";
+import { promptInstallDocker } from "./utilities/dockerCheck";
 
 export function activate(context: ExtensionContext) {
   console.log("DockForge extension is now active!");
+
+  checkDockerInstalled().then((installed) => {
+    if (!installed) {
+      promptInstallDocker(); // inform user on activation once 
+    }
+  });
 
   // Get workspace root
   const workspaceRoot = workspace.workspaceFolders?.[0]?.uri.fsPath || "";
@@ -29,12 +36,21 @@ export function activate(context: ExtensionContext) {
   // Create the show DockForge command (opens the main panel)
   const showDockForgeCommand = commands.registerCommand(
     "dockforge.showDockForge",
-    (projectName?: string) => {
+    async (projectName?: string) => {
       console.log("Opening DockForge panel for project:", projectName);
+
+      const dockerInstalled = await checkDockerInstalled();
+
+      if (!dockerInstalled) {
+        await promptInstallDocker();
+        return;
+      }
+
       // Use a generic ID for command palette access
       DockForgePanel.render(context.extensionUri, "default", "Dockerfile");
     }
   );
+
   const showDockerHubCommand = commands.registerCommand("dockforge.showDockerHub", (projectName?: string) => {
     console.log('Opening Docker Hub Sign-in panel for project:', projectName);
     DockerHubPanel.render(context.extensionUri);
@@ -116,3 +132,4 @@ export function activate(context: ExtensionContext) {
     )
   );
 }
+

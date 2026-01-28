@@ -1,33 +1,31 @@
-import { Disposable, Webview, WebviewPanel, window, Uri, ViewColumn } from "vscode";
+import {
+  Disposable,
+  Webview,
+  WebviewPanel,
+  window,
+  Uri,
+  ViewColumn,
+} from "vscode";
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
 import { DockerfileData } from "../types/DockerfileData";
+import { ensureDockerReady } from "../utilities/dockerCheck";
+import * as fs from "fs";
+import * as path from "path";
 
 /**
  * This class manages the state and behavior of DockForge webview panels.
- *
- * It contains all the data and methods for:
- *
- * - Creating and rendering DockForge webview panels
- * - Properly cleaning up and disposing of webview resources when the panel is closed
- * - Setting the HTML (and by proxy CSS/JavaScript) content of the webview panel
- * - Setting message listeners so data can be passed between the webview and extension
  */
 export class DockForgePanel {
   public static panels: Map<string, DockForgePanel> = new Map();
   private readonly _panel: WebviewPanel;
-  private _disposables: Disposable[] = [];
+  private readonly _disposables: Disposable[] = [];
   private readonly _dockerfileId: string;
   private readonly _dockerfileName: string;
   private _data?: DockerfileData;
   private _onDataUpdate?: (id: string, data: DockerfileData) => void;
 
-  /**
-   * The DockForgePanel class private constructor (called only from the render method).
-   *
-   * @param panel A reference to the webview panel
-   * @param extensionUri The URI of the directory containing the extension
-   */
+
   private constructor(
     panel: WebviewPanel, 
     extensionUri: Uri, 
@@ -42,14 +40,14 @@ export class DockForgePanel {
     this._data = data;
     this._onDataUpdate = onDataUpdate;
 
-    // Set an event listener to listen for when the panel is disposed (i.e. when the user closes
-    // the panel or when the panel is closed programmatically)
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    // Set the HTML content for the webview panel
-    this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
+    this._panel.webview.html = this._getWebviewContent(
+      this._panel.webview,
+      extensionUri
+    );
 
-    // Set an event listener to listen for messages passed from the webview context
+    // ✅ Correct place for all webview → extension logic
     this._setWebviewMessageListener(this._panel.webview);
   }
 
@@ -105,91 +103,225 @@ export class DockForgePanel {
   }
   
 
-  /**
-   * Cleans up and disposes of webview resources when the webview panel is closed.
-   */
   public dispose() {
     DockForgePanel.panels.delete(this._dockerfileId);
 
     // Dispose of the current webview panel
     this._panel.dispose();
 
-    // Dispose of all disposables (i.e. commands) for the current webview panel
     while (this._disposables.length) {
-      const disposable = this._disposables.pop();
-      if (disposable) {
-        disposable.dispose();
-      }
+      this._disposables.pop()?.dispose();
     }
   }
 
   /**
-   * Defines and returns the HTML that should be rendered within the webview panel.
-   *
-   * @remarks This is also the place where references to the React webview build files
-   * are created and inserted into the webview HTML.
-   *
-   * @param webview A reference to the extension webview
-   * @param extensionUri The URI of the directory containing the extension
-   * @returns A template string literal containing the HTML that should be
-   * rendered within the webview panel
+   * Always generate:
+   * Dockerfile, Dockerfile1, Dockerfile2, ...
    */
-  private _getWebviewContent(webview: Webview, extensionUri: Uri) {
-    // The CSS file from the React build output
-    const stylesUri = getUri(webview, extensionUri, ["webview-ui", "build", "assets", "index.css"]);
-    // The JS file from the React build output
-    const scriptUri = getUri(webview, extensionUri, ["webview-ui", "build", "assets", "index.js"]);
+  private _getUniqueDockerfilePath(dir: string): string {
+    let counter = 0;
+    let filePath: string;
 
-    const nonce = getNonce();
+    do {
+      const suffix = counter === 0 ? "" : counter.toString();
+      filePath = path.join(dir, `Dockerfile${suffix}`);
+      counter++;
+    } while (fs.existsSync(filePath));
 
-    // Tip: Install the es6-string-html VS Code extension to enable code highlighting below
-  return /*html*/ `
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta http-equiv="Content-Security-Policy"
-          content="default-src 'none';
-                   style-src ${webview.cspSource};
-                   script-src 'nonce-${nonce}';">
-        <link rel="stylesheet" type="text/css" href="${stylesUri}">
-        <title>DockForge - ${this._dockerfileName}</title>
-      </head>
-      <body>
-        <div id="root"></div>
-
-        <!-- IMPORTANT: App.tsx needs this -->
-        <script nonce="${nonce}">
-          window.dockforgePage = "dockforge-home";
-          window.dockerfileId = "${this._dockerfileId}";
-          window.dockerfileName = "${this._dockerfileName}";
-          window.dockerfileData = ${this._data ? JSON.stringify(this._data) : 'null'};
-        </script>
-
-        <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
-      </body>
-    </html>
-  `;
+    return filePath;
   }
 
   /**
-   * Sets up an event listener to listen for messages passed from the webview context and
-   * executes code based on the message that is recieved.
-   *
-   * @param webview A reference to the extension webview
-   * @param context A reference to the extension context
+   * Generate Dockerfile content from stages
+   */
+  private _generateDockerfile(stages: any[]): string {
+    const lines: string[] = [];
+    lines.push("# Generated by DockForge", "");
+
+    stages.forEach((stage, index) => {
+      // FROM line (with optional AS)
+      if (stage.stageName && stage.stageName.trim()) {
+        lines.push(`FROM ${stage.baseImage} AS ${stage.stageName.trim()}`);
+      } else {
+        lines.push(`FROM ${stage.baseImage}`);
+      }
+
+      // Commands
+      stage.commands.forEach((cmd: any) => {
+        if (cmd.value && cmd.value.trim()) {
+          lines.push(`${cmd.type} ${cmd.value}`);
+        }
+      });
+
+      // Blank line between stages
+      if (index < stages.length - 1) {
+        lines.push("");
+      }
+    });
+
+    return lines.join("\n") + "\n";
+  }
+
+
+
+  private _getWebviewContent(webview: Webview, extensionUri: Uri) {
+    const stylesUri = getUri(webview, extensionUri, [
+      "webview-ui",
+      "build",
+      "assets",
+      "index.css",
+    ]);
+    const scriptUri = getUri(webview, extensionUri, [
+      "webview-ui",
+      "build",
+      "assets",
+      "index.js",
+    ]);
+    const nonce = getNonce();
+
+    return /*html*/ `
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <meta http-equiv="Content-Security-Policy"
+            content="default-src 'none';
+                     style-src ${webview.cspSource} 'unsafe-inline';
+                     script-src 'nonce-${nonce}';
+                     worker-src blob:;
+                     font-src ${webview.cspSource};">
+          <link rel="stylesheet" type="text/css" href="${stylesUri}">
+          <title>DockForge - ${this._dockerfileName}</title>
+        </head>
+        <body>
+          <div id="root"></div>
+
+          <script nonce="${nonce}">
+            window.dockforgePage = "dockforge-home";
+          window.dockerfileId = "${this._dockerfileId}";
+          window.dockerfileName = "${this._dockerfileName}";
+          window.dockerfileData = ${this._data ? JSON.stringify(this._data) : 'null'};
+          </script>
+
+          <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
+        </body>
+      </html>
+    `;
+  }
+
+  /**
+   * ✅ Webview → Extension message handling
    */
   private _setWebviewMessageListener(webview: Webview) {
     webview.onDidReceiveMessage(
-      (message: any) => {
-        const command = message.command;
+      async (message: { 
+        command?: string; 
+        type?: string; 
+        payload?: any;
+        data?: any;
+        showNotification?: boolean;
+      }) => {
+        // Support both `command` and `type` to avoid breaking changes
+        const action = message.type ?? message.command;
 
-        switch (command) {
+        switch (action) {
           case "hello":
-            // Code that should run in response to the hello message command
-            window.showInformationMessage(message.text);
+            window.showInformationMessage("Hello from DockForge");
             return;
+
+          case "INSERT_TO_WORKSPACE": {
+            const warnings: string[] = message.payload?.warnings ?? [];
+            const stages = message.payload?.stages ?? [];
+            if (!stages || stages.length === 0) {
+              window.showWarningMessage(
+                "No stages found. Please add at least one stage before inserting a Dockerfile."
+              );
+              return;
+            }
+            // 1️⃣ Validation decision
+            if (warnings.length > 0) {
+              const choice = await window.showWarningMessage(
+                `There are ${warnings.length} validation warning(s).`,
+                { modal: true },
+                "Keep Editing",
+                "Insert Anyway"
+              );
+
+              if (choice !== "Insert Anyway") {
+                return;
+              }
+            }
+
+            // 2️⃣ Select target folder
+            const folders = await window.showOpenDialog({
+              canSelectFiles: false,
+              canSelectFolders: true,
+              canSelectMany: false,
+              openLabel: "Select folder to insert Dockerfile",
+            });
+
+            if (!folders || folders.length === 0) {
+              return;
+            }
+
+            const targetDir = folders[0].fsPath;
+
+            // 3️⃣ Generate Dockerfile content
+            const dockerfileContent = this._generateDockerfile(stages);
+
+            // 4️⃣ Resolve unique filename
+            const dockerfilePath = this._getUniqueDockerfilePath(targetDir);
+
+            // 5️⃣ Write Dockerfile
+            try {
+              fs.writeFileSync(dockerfilePath, dockerfileContent, "utf8");
+              window.showInformationMessage(
+                `Dockerfile created successfully:\n${dockerfilePath}`
+              );
+            } catch (error) {
+              window.showErrorMessage(
+                `Failed to create Dockerfile: ${
+                  error instanceof Error ? error.message : String(error)
+                }`
+              );
+            }
+
+            return;
+          }
+
+          case "TEST_BUILD": {
+            if (!(await ensureDockerReady())) return;
+
+            // TODO:
+            // Implement docker test build logic here
+            window.showInformationMessage(
+              "Docker is ready. Test Build can proceed."
+            );
+            return;
+          }
+
+          case "BUILD_IMAGE": {
+            if (!(await ensureDockerReady())) return;
+
+            // TODO:
+            // Implement docker build image logic here
+            window.showInformationMessage(
+              "Docker is ready. Build Image can proceed."
+            );
+            return;
+          }
+
+          case "RUN_CONTAINER": {
+            if (!(await ensureDockerReady())) return;
+
+            // TODO:
+            // Implement docker run container logic here
+            window.showInformationMessage(
+              "Docker is ready. Run Container can proceed."
+            );
+            return;
+          }
           
           case "saveDockerfileData":
             // Save Dockerfile data
@@ -213,8 +345,9 @@ export class DockForgePanel {
             // Send current data to webview
             this.sendDataToWebview();
             return;
-          // Add more switch case statements here as more webview message commands
-          // are created within the webview context (i.e. inside media/main.js)
+
+          default:
+            console.warn("Unknown webview message:", message);
         }
       },
       undefined,
