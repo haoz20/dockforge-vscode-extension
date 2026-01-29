@@ -4,6 +4,11 @@
   height: 100%;
   background-color: var(--vscode-editor-background);
   border-left: 1px solid var(--vscode-panel-border);
+  /* Keep preview panel fixed, prevent scrolling */
+  overflow: hidden !important;
+  position: relative;
+  /* Prevent any child from causing scroll */
+  contain: layout style;
 }
 
 .preview-header {
