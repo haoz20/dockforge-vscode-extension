@@ -1,6 +1,7 @@
 import React from "react";
 import { VSCodeButton, VSCodeTextField, VSCodeDivider } from "@vscode/webview-ui-toolkit/react";
 import CommandDropdown from "./CommandDropdown";
+import BaseImageSelector from "./BaseImageSelector";
 
 export interface CommandItem {
   id: string;
@@ -42,21 +43,6 @@ const commandOptions = [
   "USER",
   "VOLUME",
   "WORKDIR",
-];
-
-const baseImageOptions = [
-  "node:18-alpine",
-  "node:20-alpine",
-  "python:3.11-slim",
-  "python:3.10-slim",
-  "ubuntu:22.04",
-  "ubuntu:20.04",
-  "alpine:3.18",
-  "golang:1.21-alpine",
-  "openjdk:17-jdk-slim",
-  "nginx:alpine",
-  "redis:alpine",
-  "postgres:15-alpine",
 ];
 
 export const StageCard: React.FC<StageCardProps> = ({ stage, stageNumber, onUpdate, onDelete }) => {
@@ -101,11 +87,9 @@ export const StageCard: React.FC<StageCardProps> = ({ stage, stageNumber, onUpda
       {/* Base Image Field */}
       <div className="field-container">
         <label className="field-label">Base Image *</label>
-        <CommandDropdown
+        <BaseImageSelector
           value={stage.baseImage}
-          options={baseImageOptions}
           onChange={(val) => updateField("baseImage", val)}
-          className="w-full"
         />
       </div>
 
