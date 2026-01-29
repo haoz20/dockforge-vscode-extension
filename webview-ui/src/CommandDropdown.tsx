@@ -13,7 +13,6 @@ export default function CommandDropdown({ value, options, onChange, className }:
       className={className}
       value={value}
       onChange={(e) => onChange((e.target as HTMLSelectElement).value)}
-      style={{ width: "100%" }}
     >
       {options.map((option) => (
         <VSCodeOption key={option} value={option}>
