@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
-body {
+html, body, #root {
   margin: 0;
   padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
   font-family: var(--vscode-font-family);
   font-size: var(--vscode-font-size);
   background-color: var(--vscode-editor-background);
@@ -370,10 +375,45 @@ vscode-button.green-button:hover::part(control) {
   overflow: hidden;
 }
 
-.builder-panel {
+/* Ensure panel group doesn't scroll */
+.split-view > [data-panel-group] {
+  overflow: hidden !important;
   height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
+}
+
+/* All panels themselves should not scroll */
+.split-view [data-panel] {
+  overflow: hidden !important;
+  position: relative;
+}
+
+/* Panel scroll containers - wrap content and control scrolling */
+.panel-scroll-container {
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+/* Left panel wrapper - scrollable */
+.builder-panel-wrapper {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.builder-panel {
+  height: auto;
+  min-height: 100%;
+}
+
+/* Right panel wrapper - fixed, no scrolling */
+.preview-panel-wrapper {
+  overflow: hidden !important;
+}
+
+/* Ensure preview content doesn't cause scrolling */
+.preview-panel-wrapper > * {
+  overflow: hidden !important;
 }
 
 .resize-handle {

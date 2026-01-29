@@ -361,8 +361,9 @@ export default function DockerfileBuilder() {
     <Group orientation="horizontal" className="split-view">
       {/* Left Panel - Builder */}
       <Panel defaultSize={50} minSize={30}>
-        <div className="container builder-panel">
-          <div className="header-row">
+        <div className="panel-scroll-container builder-panel-wrapper">
+          <div className="container builder-panel">
+            <div className="header-row">
             <h1>Dockerfile Builder</h1>
             <div style={{ display: "flex", gap: "8px" }}>
               <VSCodeButton onClick={() => saveDockerfileData(true)} appearance="secondary">
@@ -500,6 +501,8 @@ export default function DockerfileBuilder() {
       </div>
 
         </div>
+
+        </div>
       </Panel>
 
       {/* Resize Handle */}
@@ -511,11 +514,13 @@ export default function DockerfileBuilder() {
 
       {/* Right Panel - Preview */}
       <Panel defaultSize={50} minSize={30}>
-        <DockerfilePreview 
-          dockerfileText={dockerfileText}
-          onCopy={handleCopyDockerfile}
-          onExport={handleExportDockerfile}
-        />
+        <div className="panel-scroll-container preview-panel-wrapper">
+          <DockerfilePreview 
+            dockerfileText={dockerfileText}
+            onCopy={handleCopyDockerfile}
+            onExport={handleExportDockerfile}
+          />
+        </div>
       </Panel>
     </Group>
   );
