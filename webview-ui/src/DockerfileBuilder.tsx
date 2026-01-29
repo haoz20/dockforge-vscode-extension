@@ -7,6 +7,7 @@ import ValidationPanel from "./ValidationPanel";
 import { DockerfileData, DockerStage, DockerCommandType } from "./types/DockerfileData";
 import { generateDockerfile } from "./utilities/dockerfileGenerator";
 import DockerfilePreview from "./DockerfilePreview";
+import { vscode } from "./utilities/vscode";
 
 // Extend window interface
 declare global {
@@ -16,12 +17,6 @@ declare global {
     dockerfileData?: DockerfileData | null;
   }
 }
-
-declare function acquireVsCodeApi(): {
-  postMessage(message: any): void;
-};
-
-const vscode = acquireVsCodeApi();
 
 export default function DockerfileBuilder() {
   const [stages, setStages] = useState<StageData[]>([]);

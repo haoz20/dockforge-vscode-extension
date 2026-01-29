@@ -10,6 +10,7 @@ import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
 import { DockerfileData } from "../types/DockerfileData";
 import { ensureDockerReady } from "../utilities/dockerCheck";
+import { fetchDockerHubTags, searchDockerHubRepositories } from "../utilities/dockerHubApi";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -42,10 +43,16 @@ export class DockForgePanel {
 
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    this._panel.webview.html = this._getWebviewContent(
+    const htmlContent = this._getWebviewContent(
       this._panel.webview,
       extensionUri
     );
+    
+    // Debug: Log the HTML content
+    console.log("[DockForge] Setting webview HTML for:", dockerfileName);
+    console.log("[DockForge] HTML length:", htmlContent.length);
+    
+    this._panel.webview.html = htmlContent;
 
     // ✅ Correct place for all webview → extension logic
     this._setWebviewMessageListener(this._panel.webview);
@@ -178,6 +185,12 @@ export class DockForgePanel {
       "index.js",
     ]);
     const nonce = getNonce();
+    
+    // Debug logging
+    console.log("[DockForge] Extension URI:", extensionUri.toString());
+    console.log("[DockForge] Styles URI:", stylesUri.toString());
+    console.log("[DockForge] Script URI:", scriptUri.toString());
+    console.log("[DockForge] CSP Source:", webview.cspSource);
 
     return /*html*/ `
       <!DOCTYPE html>
@@ -188,9 +201,11 @@ export class DockForgePanel {
           <meta http-equiv="Content-Security-Policy"
             content="default-src 'none';
                      style-src ${webview.cspSource} 'unsafe-inline';
-                     script-src 'nonce-${nonce}';
-                     worker-src blob:;
-                     font-src ${webview.cspSource};">
+                     script-src 'nonce-${nonce}' blob:;
+                     worker-src ${webview.cspSource} blob:;
+                     font-src ${webview.cspSource};
+                     img-src ${webview.cspSource} https: data:;
+                     connect-src https://hub.docker.com https://registry.hub.docker.com;">
           <link rel="stylesheet" type="text/css" href="${stylesUri}">
           <title>DockForge - ${this._dockerfileName}</title>
         </head>
@@ -199,9 +214,9 @@ export class DockForgePanel {
 
           <script nonce="${nonce}">
             window.dockforgePage = "dockforge-home";
-          window.dockerfileId = "${this._dockerfileId}";
-          window.dockerfileName = "${this._dockerfileName}";
-          window.dockerfileData = ${this._data ? JSON.stringify(this._data) : 'null'};
+            window.dockerfileId = "${this._dockerfileId}";
+            window.dockerfileName = "${this._dockerfileName}";
+            window.dockerfileData = ${this._data ? JSON.stringify(this._data) : 'null'};
           </script>
 
           <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
@@ -221,6 +236,8 @@ export class DockForgePanel {
         payload?: any;
         data?: any;
         showNotification?: boolean;
+        query?: string;
+        repository?: string;
       }) => {
         // Support both `command` and `type` to avoid breaking changes
         const action = message.type ?? message.command;
@@ -345,6 +362,68 @@ export class DockForgePanel {
             // Send current data to webview
             this.sendDataToWebview();
             return;
+
+          case "dockerHubSearch": {
+            const query =
+              message.payload?.query ??
+              message.data?.query ??
+              message.query ??
+              "";
+
+            if (!query || typeof query !== "string") {
+              this._panel.webview.postMessage({
+                command: "dockerHubSearchResults",
+                results: [],
+              });
+              return;
+            }
+
+            try {
+              const results = await searchDockerHubRepositories(query, 15);
+              this._panel.webview.postMessage({
+                command: "dockerHubSearchResults",
+                query,
+                results,
+              });
+            } catch (error) {
+              const messageText =
+                error instanceof Error ? error.message : String(error);
+              this._panel.webview.postMessage({
+                command: "dockerHubError",
+                message: messageText,
+              });
+            }
+            return;
+          }
+
+          case "dockerHubFetchTags": {
+            const repository =
+              message.payload?.repository ??
+              message.data?.repository ??
+              message.repository ??
+              "";
+
+            if (!repository || typeof repository !== "string") {
+              return;
+            }
+
+            try {
+              const tags = await fetchDockerHubTags(repository, 30);
+              this._panel.webview.postMessage({
+                command: "dockerHubTagsResult",
+                repository,
+                tags,
+              });
+            } catch (error) {
+              const messageText =
+                error instanceof Error ? error.message : String(error);
+              this._panel.webview.postMessage({
+                command: "dockerHubError",
+                message: messageText,
+              });
+            }
+            return;
+          }
 
           default:
             console.warn("Unknown webview message:", message);
