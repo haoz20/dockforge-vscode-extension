@@ -250,12 +250,28 @@ export class DockForgePanel {
           case "INSERT_TO_WORKSPACE": {
             const warnings: string[] = message.payload?.warnings ?? [];
             const stages = message.payload?.stages ?? [];
+            const dockerfileTextFromWebview = message.payload?.dockerfileText;
+
+            // Optional: keep this guard if your UI requires at least one stage
             if (!stages || stages.length === 0) {
               window.showWarningMessage(
                 "No stages found. Please add at least one stage before inserting a Dockerfile."
               );
               return;
             }
+
+            // Decide Dockerfile content: prefer preview text for perfect consistency
+            const dockerfileContent =
+              typeof dockerfileTextFromWebview === "string" && dockerfileTextFromWebview.trim().length > 0
+                ? dockerfileTextFromWebview
+                : this._generateDockerfile(stages); // fallback (should rarely happen)
+
+            // Extra safety: if content is still empty, abort
+            if (!dockerfileContent || dockerfileContent.trim().length === 0) {
+              window.showErrorMessage("Dockerfile content is empty. Nothing to insert.");
+              return;
+            }
+
             // 1️⃣ Validation decision
             if (warnings.length > 0) {
               const choice = await window.showWarningMessage(
@@ -284,13 +300,10 @@ export class DockForgePanel {
 
             const targetDir = folders[0].fsPath;
 
-            // 3️⃣ Generate Dockerfile content
-            const dockerfileContent = this._generateDockerfile(stages);
-
-            // 4️⃣ Resolve unique filename
+            // 3️⃣ Resolve unique filename
             const dockerfilePath = this._getUniqueDockerfilePath(targetDir);
 
-            // 5️⃣ Write Dockerfile
+            // 4️⃣ Write Dockerfile
             try {
               fs.writeFileSync(dockerfilePath, dockerfileContent, "utf8");
               window.showInformationMessage(

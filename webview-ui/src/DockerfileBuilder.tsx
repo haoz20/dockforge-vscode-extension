@@ -273,10 +273,10 @@ export default function DockerfileBuilder() {
   };
 
   const handleInsertToWorkspace = () => {
-  console.log("Insert clicked");
   vscode.postMessage({
     type: "INSERT_TO_WORKSPACE",
     payload: {
+      dockerfileText,
       stages,
       warnings: results.warnings,
       suggestions: results.suggestions,
