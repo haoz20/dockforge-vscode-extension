@@ -29,9 +29,8 @@
           "name": "Build Dockerfiles"
         },
         {
-          "id": "docker-images-view",
-          "name": "Docker Images",
-          "type": "tree"
+          "id": "dockforge-docker-images-view",
+          "name": "Docker Images"
         },
         {
           "id": "dockforge-dockerhubview",
@@ -47,8 +46,9 @@
         "when": "true"
       },
       {
-        "view": "docker-images-view",
-        "contents": "Welcome to Docker Images!\nManage and Run your Docker images here.\n\n[$(refresh) Refresh Images](command:dockforge.refreshDockerImages)"
+        "view": "dockforge-docker-images-view",
+        "contents": "No Docker images found.\n\nBuild an image from the Dockerfile Builder or pull one from Docker Hub.\n\n[$(refresh) Refresh Images](command:dockforge.refreshDockerImages)",
+        "when": "true"
       },
       {
         "view": "dockforge-dockerfilesview",
@@ -82,6 +82,31 @@
       {
         "command": "dockforge.showDockerHub",
         "title": "DockForge: Docker Hub Show"
+      },
+      {
+        "command": "dockforge.refreshDockerImages",
+        "title": "Refresh Docker Images",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "dockforge.runImage",
+        "title": "Run Container",
+        "icon": "$(play)"
+      },
+      {
+        "command": "dockforge.deleteImage",
+        "title": "Delete Image",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "dockforge.stopContainer",
+        "title": "Stop Container",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "dockforge.openInDockerDesktop",
+        "title": "Open in Docker Desktop",
+        "icon": "$(link-external)"
       }
     ],
     "menus": {
@@ -94,6 +119,11 @@
         {
           "command": "dockforge.newDockerfile",
           "when": "view == dockforge-dockerfilesview",
+          "group": "navigation"
+        },
+        {
+          "command": "dockforge.refreshDockerImages",
+          "when": "view == dockforge-docker-images-view",
           "group": "navigation"
         }
       ],
