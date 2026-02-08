@@ -29,6 +29,13 @@ export default function DockerfileBuilder() {
   const isInitialLoadRef = useRef(true);
   const isSavingRef = useRef(false);
 
+  // Build state
+  const [isBuilding, setIsBuilding] = useState(false);
+  const [buildLogs, setBuildLogs] = useState<string[]>([]);
+  const [buildProgress, setBuildProgress] = useState<{ stage: string; progress: number } | null>(null);
+  const [buildResult, setBuildResult] = useState<{ success: boolean; error?: string } | null>(null);
+  const [showBuildOutput, setShowBuildOutput] = useState(false);
+
   // Load Dockerfile data into state
   const loadDockerfileData = useCallback((data: DockerfileData) => {
     if (!data) return;
@@ -92,8 +99,34 @@ export default function DockerfileBuilder() {
     // Listen for messages from extension
     const messageHandler = (event: MessageEvent) => {
       const message = event.data;
-      if (message.command === "loadDockerfileData" && message.data) {
-        loadDockerfileData(message.data);
+      
+      // Handle build output messages
+      switch (message.command) {
+        case "buildOutput":
+        case "runOutput":
+        case "buildRunOutput":
+          setBuildLogs(prev => [...prev, message.line]);
+          break;
+          
+        case "buildProgress":
+          setBuildProgress({ stage: message.stage, progress: message.progress });
+          break;
+          
+        case "buildComplete":
+        case "runComplete":
+        case "buildRunComplete":
+          setIsBuilding(false);
+          setBuildResult({ 
+            success: message.success || message.buildSuccess, 
+            error: message.error 
+          });
+          break;
+          
+        case "loadDockerfileData":
+          if (message.data) {
+            loadDockerfileData(message.data);
+          }
+          break;
       }
     };
 
@@ -233,34 +266,47 @@ export default function DockerfileBuilder() {
   }, [stages, imageName, imageTag, containerName, portMapping, envVariables, saveDockerfileData]);
 
   const handleRunTestBuild = () => {
+    setIsBuilding(true);
+    setBuildLogs([]);
+    setBuildResult(null);
+    setBuildProgress(null);
+    setShowBuildOutput(true);
+    
     vscode.postMessage({
-      type: "TEST_BUILD", // Delegate build request to extension host (Docker checks + build execution handled there)
+      type: "TEST_BUILD",
+      payload: {
+        imageName: imageName || "dockforge-test",
+        imageTag: imageTag || "latest",
+        dockerfileText, // Send pre-generated Dockerfile text
+      },
+    });
+  };
+
+  const handleBuildImage = () => {
+    setIsBuilding(true);
+    setBuildLogs([]);
+    setBuildResult(null);
+    setBuildProgress(null);
+    setShowBuildOutput(true);
+    
+    vscode.postMessage({
+      type: "BUILD_IMAGE",
       payload: {
         imageName,
         imageTag,
-        stages,
+        dockerfileText, // Send pre-generated Dockerfile text
       },
     });
-
-    // TODO: Implement docker build logic
-  };
-
-    const handleBuildImage = () => {
-      vscode.postMessage({
-        type: "BUILD_IMAGE", // Delegate build request to extension host (Docker checks + build execution handled there)
-        payload: {
-          imageName,
-          imageTag,
-          stages,
-        },
-      });
-
-      // TODO: Implement docker build logic
   };
 
   const handleRunContainer = () => {
+    setIsBuilding(true);
+    setBuildLogs([]);
+    setBuildResult(null);
+    setShowBuildOutput(true);
+    
     vscode.postMessage({
-      type: "RUN_CONTAINER", // Delegate build request to extension host (Docker checks + build execution handled there)
+      type: "RUN_CONTAINER",
       payload: {
         imageName,
         imageTag,
@@ -269,7 +315,26 @@ export default function DockerfileBuilder() {
         envVariables,
       },
     });
-    // TODO: Implement docker run logic
+  };
+
+  const handleBuildAndRun = () => {
+    setIsBuilding(true);
+    setBuildLogs([]);
+    setBuildResult(null);
+    setBuildProgress(null);
+    setShowBuildOutput(true);
+    
+    vscode.postMessage({
+      type: "BUILD_AND_RUN",
+      payload: {
+        imageName,
+        imageTag,
+        dockerfileText, // Send pre-generated Dockerfile text
+        containerName,
+        portMapping,
+        envVariables,
+      },
+    });
   };
 
   const handleInsertToWorkspace = () => {
@@ -496,11 +561,57 @@ export default function DockerfileBuilder() {
             <VSCodeButton className="run-button green-button" onClick={handleRunContainer}>
               <span className="button-icon">▶</span> Run Container
             </VSCodeButton>
+            <VSCodeButton className="build-run-button" onClick={handleBuildAndRun}>
+              <span className="button-icon">🚀</span> Build & Run
+            </VSCodeButton>
           </div>
         </div>
       </div>
 
         </div>
+
+        {/* Build Output Panel - Show when building or when user wants to see output */}
+        {showBuildOutput && (
+          <div className="build-output-overlay">
+            <div className="build-output-panel">
+              <div className="build-output-header">
+                <h3>Build Output</h3>
+                <div className="build-output-controls">
+                  {buildResult && (
+                    <span className={`build-status ${buildResult.success ? 'success' : 'error'}`}>
+                      {buildResult.success ? '✅ Success' : '❌ Failed'}
+                    </span>
+                  )}
+                  <VSCodeButton appearance="icon" onClick={() => setBuildLogs([])}>
+                    Clear
+                  </VSCodeButton>
+                  <VSCodeButton appearance="icon" onClick={() => setShowBuildOutput(false)}>
+                    ✕
+                  </VSCodeButton>
+                </div>
+              </div>
+              
+              {buildProgress && (
+                <div className="build-progress">
+                  <div className="progress-bar" style={{ width: `${buildProgress.progress}%` }} />
+                  <span className="progress-text">{buildProgress.stage}</span>
+                </div>
+              )}
+              
+              <div className="build-logs">
+                {buildLogs.length === 0 && isBuilding && (
+                  <div className="log-line">Starting build...</div>
+                )}
+                {buildLogs.map((log, i) => (
+                  <div key={i} className="log-line">{log}</div>
+                ))}
+                {buildResult && buildResult.error && (
+                  <div className="log-line error-line">{buildResult.error}</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         </div>
       </Panel>

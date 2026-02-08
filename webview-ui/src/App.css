@@ -5,3 +5,151 @@ main {
   align-items: flex-start;
   height: 100%;
 }
+
+/* Build Output Panel Styles */
+.build-output-overlay {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 300px;
+  background: var(--vscode-editor-background);
+  border-top: 1px solid var(--vscode-panel-border);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.build-output-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.build-output-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-editor-background);
+}
+
+.build-output-header h3 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--vscode-foreground);
+  font-weight: 600;
+}
+
+.build-output-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.build-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.build-status.success {
+  color: var(--vscode-testing-iconPassed);
+  background: var(--vscode-testing-iconPassed-alpha, rgba(0, 128, 0, 0.1));
+}
+
+.build-status.error {
+  color: var(--vscode-testing-iconFailed);
+  background: var(--vscode-testing-iconFailed-alpha, rgba(255, 0, 0, 0.1));
+}
+
+.build-progress {
+  position: relative;
+  height: 24px;
+  background: var(--vscode-input-background);
+  margin: 0 12px 8px 12px;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--vscode-progressBar-background);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-editor-font-family, monospace);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 16px);
+}
+
+.build-logs {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  font-family: var(--vscode-editor-font-family, "SF Mono", Monaco, Menlo, Consolas, monospace);
+  font-size: 12px;
+  background: var(--vscode-terminal-background, var(--vscode-editor-background));
+  padding: 8px 12px;
+  line-height: 1.5;
+}
+
+.log-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--vscode-terminal-foreground, var(--vscode-foreground));
+  margin-bottom: 2px;
+}
+
+.log-line.error-line {
+  color: var(--vscode-errorForeground, #f48771);
+  font-weight: 600;
+}
+
+/* Custom scrollbar for build logs */
+.build-logs::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.build-logs::-webkit-scrollbar-track {
+  background: var(--vscode-scrollbarSlider-background);
+}
+
+.build-logs::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-hoverBackground);
+  border-radius: 5px;
+}
+
+.build-logs::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-activeBackground);
+}
+
+/* Button styles for build actions */
+.button-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.build-button,
+.run-button,
+.build-run-button {
+  flex: 1;
+}
+
+.build-run-button {
+  background: linear-gradient(135deg, var(--vscode-button-background) 0%, var(--vscode-button-hoverBackground) 100%);
+}
