@@ -64,7 +64,7 @@ export async function createTempDockerfile(
   contextPath: string,
   dockerfileId: string
 ): Promise<string> {
-  const tempDir = path.join(contextPath, ".dockforge");
+  const tempDir = path.join(contextPath, "");
   
   // Create .dockforge directory if it doesn't exist
   if (!fs.existsSync(tempDir)) {
