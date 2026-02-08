@@ -26,6 +26,7 @@ export class DockerImagesTreeDataProvider implements vscode.TreeDataProvider<Doc
 
   private images: DockerImage[] = [];
   private containers: RunningContainer[] = [];
+  private dockerRunning: boolean = true;
 
   constructor() {
     this.refresh();
@@ -44,6 +45,21 @@ export class DockerImagesTreeDataProvider implements vscode.TreeDataProvider<Doc
     if (!element) {
       // Root level - show all images
       await this.loadImages();
+      
+      if (!this.dockerRunning) {
+        return [new DockerErrorTreeItem(
+          "Docker Desktop is not running",
+          "Open Docker Desktop to see images"
+        )];
+      }
+      
+      if (this.images.length === 0) {
+        return [new DockerErrorTreeItem(
+          "No Docker images found",
+          "Build an image to see it here"
+        )];
+      }
+      
       return this.images.map(img => new DockerImageTreeItem(img, this.containers));
     } else if (element instanceof DockerImageTreeItem) {
       return element.getChildren();
@@ -55,6 +71,18 @@ export class DockerImagesTreeDataProvider implements vscode.TreeDataProvider<Doc
 
   private async loadImages(): Promise<void> {
     try {
+      // First, check if Docker daemon is running
+      try {
+        await execAsync('docker info', { timeout: 3000 });
+        this.dockerRunning = true;
+      } catch (error) {
+        this.dockerRunning = false;
+        this.images = [];
+        this.containers = [];
+        console.error("Docker daemon is not running:", error);
+        return;
+      }
+
       // Get all images
       const { stdout: imagesOutput } = await execAsync(
         'docker images --format "{{.Repository}}|||{{.Tag}}|||{{.ID}}|||{{.CreatedAt}}|||{{.Size}}"'
@@ -436,5 +464,15 @@ class DockerContainerActionItem extends DockerTreeItem {
       title: label,
       arguments: [containerId],
     };
+  }
+}
+
+class DockerErrorTreeItem extends DockerTreeItem {
+  constructor(label: string, description: string) {
+    super(label, vscode.TreeItemCollapsibleState.None);
+    this.contextValue = "dockerError";
+    this.iconPath = new vscode.ThemeIcon("warning", new vscode.ThemeColor("problemsWarningIcon.foreground"));
+    this.description = description;
+    this.tooltip = `${label}\n${description}`;
   }
 }
