@@ -422,6 +422,24 @@ export class DockForgePanel {
                 imageId: result.imageId,
                 error: result.error,
               });
+
+              // Refresh Docker Images tree view after successful build
+              if (result.success) {
+                const dockerImagesProvider = (global as any).dockerImagesTreeDataProvider;
+                if (dockerImagesProvider) {
+                  dockerImagesProvider.refresh();
+                }
+
+                // Show notification with action to reveal in Docker Images view
+                window.showInformationMessage(
+                  `✅ Image built: ${imageName}:${imageTag || "latest"}`,
+                  "View in Docker Images"
+                ).then((selection) => {
+                  if (selection === "View in Docker Images") {
+                    vscode.commands.executeCommand("dockforge-docker-images-view.focus");
+                  }
+                });
+              }
             } catch (error) {
               const errorMessage = error instanceof Error ? error.message : String(error);
               this._panel.webview.postMessage({
