@@ -92,6 +92,7 @@ export default function DockerfileBuilder() {
     // Listen for messages from extension
     const messageHandler = (event: MessageEvent) => {
       const message = event.data;
+      
       if (message.command === "loadDockerfileData" && message.data) {
         loadDockerfileData(message.data);
       }
@@ -234,33 +235,29 @@ export default function DockerfileBuilder() {
 
   const handleRunTestBuild = () => {
     vscode.postMessage({
-      type: "TEST_BUILD", // Delegate build request to extension host (Docker checks + build execution handled there)
+      type: "TEST_BUILD",
+      payload: {
+        imageName: imageName || "dockforge-test",
+        imageTag: imageTag || "latest",
+        dockerfileText,
+      },
+    });
+  };
+
+  const handleBuildImage = () => {
+    vscode.postMessage({
+      type: "BUILD_IMAGE",
       payload: {
         imageName,
         imageTag,
-        stages,
+        dockerfileText,
       },
     });
-
-    // TODO: Implement docker build logic
-  };
-
-    const handleBuildImage = () => {
-      vscode.postMessage({
-        type: "BUILD_IMAGE", // Delegate build request to extension host (Docker checks + build execution handled there)
-        payload: {
-          imageName,
-          imageTag,
-          stages,
-        },
-      });
-
-      // TODO: Implement docker build logic
   };
 
   const handleRunContainer = () => {
     vscode.postMessage({
-      type: "RUN_CONTAINER", // Delegate build request to extension host (Docker checks + build execution handled there)
+      type: "RUN_CONTAINER",
       payload: {
         imageName,
         imageTag,
@@ -269,7 +266,20 @@ export default function DockerfileBuilder() {
         envVariables,
       },
     });
-    // TODO: Implement docker run logic
+  };
+
+  const handleBuildAndRun = () => {
+    vscode.postMessage({
+      type: "BUILD_AND_RUN",
+      payload: {
+        imageName,
+        imageTag,
+        dockerfileText,
+        containerName,
+        portMapping,
+        envVariables,
+      },
+    });
   };
 
   const handleInsertToWorkspace = () => {
@@ -371,7 +381,7 @@ export default function DockerfileBuilder() {
               </VSCodeButton>
               <VSCodeButton onClick={addStage}>+ Add Stage</VSCodeButton>
             </div>
-          </div>
+        </div>
 
       {/* Render Stage Cards */}
       {stages.map((stage, index) => (
@@ -496,14 +506,15 @@ export default function DockerfileBuilder() {
             <VSCodeButton className="run-button green-button" onClick={handleRunContainer}>
               <span className="button-icon">▶</span> Run Container
             </VSCodeButton>
+            <VSCodeButton className="build-run-button" onClick={handleBuildAndRun}>
+              <span className="button-icon">🚀</span> Build & Run
+            </VSCodeButton>
           </div>
         </div>
       </div>
-
         </div>
-
-        </div>
-      </Panel>
+      </div>
+      </Panel>  
 
       {/* Resize Handle */}
       <Separator
