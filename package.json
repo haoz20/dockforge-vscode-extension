@@ -3,7 +3,7 @@
   "publisher": "dockforge",
   "displayName": "DockForge",
   "description": "A VS Code extension for Docker and DevContainer management with React + Vite and the Webview UI Toolkit.",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -29,6 +29,10 @@
           "name": "Build Dockerfiles"
         },
         {
+          "id": "dockforge-docker-images-view",
+          "name": "Docker Images"
+        },
+        {
           "id": "dockforge-dockerhubview",
           "name": "Docker Hub",
           "type": "webview"
@@ -37,8 +41,13 @@
     },
     "viewsWelcome": [
       {
-        "view": "dockforge-dockerhub",
+        "view": "dockforge-dockerhubview",
         "contents": "Welcome to Docker Hub!\nLogin to pull and push private images from Docker Hub.\n\n[Sign In](command:dockforge.showDockerHub)\n[Sign Up](https://hub.docker.com/signup)",
+        "when": "true"
+      },
+      {
+        "view": "dockforge-docker-images-view",
+        "contents": "No Docker images found.\n\nBuild an image from the Dockerfile Builder or pull one from Docker Hub.\n\n[$(refresh) Refresh Images](command:dockforge.refreshDockerImages)",
         "when": "true"
       },
       {
@@ -73,6 +82,31 @@
       {
         "command": "dockforge.showDockerHub",
         "title": "DockForge: Docker Hub Show"
+      },
+      {
+        "command": "dockforge.refreshDockerImages",
+        "title": "Refresh Docker Images",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "dockforge.runImage",
+        "title": "Run Container",
+        "icon": "$(play)"
+      },
+      {
+        "command": "dockforge.deleteImage",
+        "title": "Delete Image",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "dockforge.stopContainer",
+        "title": "Stop Container",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "dockforge.openInDockerDesktop",
+        "title": "Open in Docker Desktop",
+        "icon": "$(link-external)"
       }
     ],
     "menus": {
@@ -85,6 +119,11 @@
         {
           "command": "dockforge.newDockerfile",
           "when": "view == dockforge-dockerfilesview",
+          "group": "navigation"
+        },
+        {
+          "command": "dockforge.refreshDockerImages",
+          "when": "view == dockforge-docker-images-view",
           "group": "navigation"
         }
       ],
@@ -118,5 +157,8 @@
     "prettier": "^2.2.1",
     "typescript": "^4.1.3",
     "vscode-test": "^1.5.0"
+  },
+  "dependencies": {
+    "react-resizable-panels": "^4.5.5"
   }
 }
