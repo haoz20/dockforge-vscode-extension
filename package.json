@@ -29,6 +29,11 @@
           "name": "Build Dockerfiles"
         },
         {
+          "id": "docker-images-view",
+          "name": "Docker Images",
+          "type": "tree"
+        },
+        {
           "id": "dockforge-dockerhubview",
           "name": "Docker Hub",
           "type": "webview"
@@ -37,9 +42,13 @@
     },
     "viewsWelcome": [
       {
-        "view": "dockforge-dockerhub",
+        "view": "dockforge-dockerhubview",
         "contents": "Welcome to Docker Hub!\nLogin to pull and push private images from Docker Hub.\n\n[Sign In](command:dockforge.showDockerHub)\n[Sign Up](https://hub.docker.com/signup)",
         "when": "true"
+      },
+      {
+        "view": "docker-images-view",
+        "contents": "Welcome to Docker Images!\nManage and Run your Docker images here.\n\n[$(refresh) Refresh Images](command:dockforge.refreshDockerImages)"
       },
       {
         "view": "dockforge-dockerfilesview",
