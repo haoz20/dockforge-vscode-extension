@@ -450,3 +450,118 @@ vscode-button.green-button:hover::part(control) {
 .resize-handle:hover::after {
   opacity: 0.3;
 }
+.test-build-placeholder {
+  padding: 16px;
+  height: 100%;
+  background-color: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
+.test-build-placeholder h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.test-build-placeholder p {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.8;
+}
+/* Right panel top (Dockerfile Preview container) */
+.right-top-scroll {
+  height: 100%;
+  min-height: 0;        /* 🔑 CRITICAL */
+  overflow: hidden;    /* Monaco scrolls internally */
+}
+
+.test-build-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Make bottom panel fill its split height */
+.right-bottom-scroll {
+  height: 100%;
+  min-height: 0;         /* IMPORTANT inside resizable panels */
+  overflow: hidden;      /* We will scroll only the log area */
+}
+
+/* Layout: header/status fixed, log scrolls */
+.test-build-panel {
+  height: 100%;
+  min-height: 0;         /* IMPORTANT for flex children */
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  box-sizing: border-box;
+  background: var(--vscode-editor-background);
+}
+
+/* Header stays visible */
+.test-build-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding-bottom: 8px;
+}
+
+/* Status stays visible */
+.test-build-status {
+  flex: 0 0 auto;
+  margin-bottom: 8px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* ✅ Scrollable log area */
+.test-build-log {
+  flex: 1 1 auto;
+  min-height: 0;               /* CRITICAL: allows scrolling */
+  overflow: auto;              /* scroll when overflow */
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  padding: 10px;
+  background: var(--vscode-editor-background);
+  font-family: var(--vscode-editor-font-family);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;       /* wrap long lines */
+  word-break: break-word;
+}
+
+/* Lines */
+.log-line {
+  display: block;
+  margin: 0;
+}
+
+/* Normal output */
+.log-out {
+  color: var(--vscode-terminal-foreground);
+}
+
+/* Errors */
+.log-err {
+  color: var(--vscode-errorForeground);
+  font-weight: 500;
+}
+
+/* Docker step / stage lines */
+.log-step {
+  color: var(--vscode-terminal-ansiBlue);
+}
+
+/* Success lines */
+.log-success {
+  color: var(--vscode-terminal-ansiGreen);
+}
+
+/* Warnings */
+.log-warn {
+  color: var(--vscode-terminal-ansiYellow);
+}

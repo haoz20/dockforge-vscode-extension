@@ -5,6 +5,7 @@ import {
   window,
   Uri,
   ViewColumn,
+  workspace,
 } from "vscode";
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
@@ -13,6 +14,8 @@ import { ensureDockerReady } from "../utilities/dockerCheck";
 import { fetchDockerHubTags, searchDockerHubRepositories } from "../utilities/dockerHubApi";
 import * as fs from "fs";
 import * as path from "path";
+import { spawn } from "child_process";
+import * as os from "os";
 
 /**
  * This class manages the state and behavior of DockForge webview panels.
@@ -310,11 +313,71 @@ export class DockForgePanel {
           case "TEST_BUILD": {
             if (!(await ensureDockerReady())) return;
 
-            // TODO:
-            // Implement docker test build logic here
-            window.showInformationMessage(
-              "Docker is ready. Test Build can proceed."
-            );
+            const imageName: string = message.payload?.imageName || "my-image";
+            const imageTag: string = message.payload?.imageTag || "latest";
+            const stages = message.payload?.stages ?? [];
+
+            // Clear UI and mark started
+            this._postToWebview({ command: "testBuildStart", image: `${imageName}:${imageTag}`, ts: Date.now() });
+
+            if (!stages || stages.length === 0) {
+              this._postToWebview({
+                command: "testBuildError",
+                message: "No stages provided. Add at least one stage before testing build.",
+                ts: Date.now(),
+              });
+              return;
+            }
+
+            // Pick a build context (workspace root if available, else ask user)
+            let contextDir = workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+            if (!contextDir) {
+              const picked = await window.showOpenDialog({
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false,
+                openLabel: "Select build context folder",
+              });
+              if (!picked || picked.length === 0) {
+                this._postToWebview({ command: "testBuildError", message: "Build cancelled (no folder selected).", ts: Date.now() });
+                return;
+              }
+              contextDir = picked[0].fsPath;
+            }
+
+            // Create a temp dockerfile
+            const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dockforge-"));
+            const tempDockerfilePath = path.join(tempDir, "Dockerfile");
+
+            try {
+              const dockerfileContent = this._generateDockerfile(stages);
+              fs.writeFileSync(tempDockerfilePath, dockerfileContent, "utf8");
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : String(e);
+              this._postToWebview({ command: "testBuildError", message: `Failed to write temp Dockerfile: ${msg}`, ts: Date.now() });
+              return;
+            }
+
+            // Build args
+            const tag = `${imageName}:${imageTag}`;
+            const args = ["build", "-f", tempDockerfilePath, "-t", tag, contextDir];
+
+            this._postToWebview({ command: "testBuildLog", kind: "stdout", line: `docker ${args.join(" ")}`, ts: Date.now() });
+
+            const exitCode = await this._runDockerBuildAndStreamLogs(args);
+
+            if (exitCode === 0) {
+              this._postToWebview({ command: "testBuildDone", ok: true, image: tag, ts: Date.now() });
+            } else {
+              this._postToWebview({ command: "testBuildDone", ok: false, image: tag, exitCode, ts: Date.now() });
+            }
+
+            // Cleanup temp dockerfile
+            try {
+              fs.rmdirSync(tempDir, { recursive: true });
+            } catch {}
+
             return;
           }
 
@@ -445,4 +508,41 @@ export class DockForgePanel {
       });
     }
   }
+  private _postToWebview(payload: any) {
+  this._panel.webview.postMessage(payload);
+}
+
+private _runDockerBuildAndStreamLogs(args: string[]) {
+  return new Promise<number>((resolve) => {
+    const proc = spawn("docker", args, { shell: false });
+
+    const send = (kind: "stdout" | "stderr", chunk: any) => {
+      const text = chunk.toString();
+      // Split to lines so UI can append nicely
+      text.split(/\r?\n/).forEach((line: string) => {
+        if (!line.trim()) return;
+        this._postToWebview({
+          command: "testBuildLog",
+          kind,
+          line,
+          ts: Date.now(),
+        });
+      });
+    };
+
+    proc.stdout.on("data", (d) => send("stdout", d));
+    proc.stderr.on("data", (d) => send("stderr", d));
+
+    proc.on("close", (code) => resolve(code ?? 0));
+    proc.on("error", (err) => {
+      this._postToWebview({
+        command: "testBuildLog",
+        kind: "stderr",
+        line: `Failed to start docker: ${err.message}`,
+        ts: Date.now(),
+      });
+      resolve(1);
+    });
+  });
+}
 }
