@@ -12,6 +12,16 @@ import { getNonce } from "../utilities/getNonce";
 import { DockerfileData } from "../types/DockerfileData";
 import { ensureDockerReady } from "../utilities/dockerCheck";
 import { fetchDockerHubTags, searchDockerHubRepositories } from "../utilities/dockerHubApi";
+
+import { 
+  buildDockerImage, 
+  runDockerContainer, 
+  testBuild,
+  buildAndRun,
+  BuildOptions, 
+  RunOptions 
+} from "../utilities/dockerBuild";
+import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import { spawn } from "child_process";
@@ -142,6 +152,16 @@ export class DockForgePanel {
   }
 
   /**
+   * The webview must supply the exact Dockerfile text it previewed.
+   * Return it if present; otherwise empty string so callers can warn.
+   */
+  private _resolveDockerfileContent(dockerfileText?: string): string {
+    if (typeof dockerfileText === "string" && dockerfileText.trim().length > 0) {
+      return dockerfileText;
+    }
+    return "";
+  }
+  /**
    * Generate Dockerfile content from stages
    */
   private _generateDockerfile(stages: any[]): string {
@@ -252,13 +272,17 @@ export class DockForgePanel {
 
           case "INSERT_TO_WORKSPACE": {
             const warnings: string[] = message.payload?.warnings ?? [];
-            const stages = message.payload?.stages ?? [];
-            if (!stages || stages.length === 0) {
-              window.showWarningMessage(
-                "No stages found. Please add at least one stage before inserting a Dockerfile."
-              );
+            const dockerfileTextFromWebview = message.payload?.dockerfileText;
+
+            // Decide Dockerfile content: must match webview preview
+            const dockerfileContent = this._resolveDockerfileContent(dockerfileTextFromWebview);
+
+            // Extra safety: if content is still empty, abort
+            if (!dockerfileContent || dockerfileContent.trim().length === 0) {
+              window.showErrorMessage("Dockerfile content is empty. Nothing to insert.");
               return;
             }
+
             // 1️⃣ Validation decision
             if (warnings.length > 0) {
               const choice = await window.showWarningMessage(
@@ -287,13 +311,10 @@ export class DockForgePanel {
 
             const targetDir = folders[0].fsPath;
 
-            // 3️⃣ Generate Dockerfile content
-            const dockerfileContent = this._generateDockerfile(stages);
-
-            // 4️⃣ Resolve unique filename
+            // 3️⃣ Resolve unique filename
             const dockerfilePath = this._getUniqueDockerfilePath(targetDir);
 
-            // 5️⃣ Write Dockerfile
+            // 4️⃣ Write Dockerfile
             try {
               fs.writeFileSync(dockerfilePath, dockerfileContent, "utf8");
               window.showInformationMessage(
@@ -384,22 +405,254 @@ export class DockForgePanel {
           case "BUILD_IMAGE": {
             if (!(await ensureDockerReady())) return;
 
-            // TODO:
-            // Implement docker build image logic here
-            window.showInformationMessage(
-              "Docker is ready. Build Image can proceed."
-            );
+            const { imageName, imageTag, stages, dockerfileText, noCache, pull, target, platform, buildArgs } = 
+              message.payload || {};
+
+            if (!imageName) {
+              window.showErrorMessage("Image name is required");
+              return;
+            }
+
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+              window.showErrorMessage("No workspace folder open. Please open a folder first.");
+              return;
+            }
+
+            const contextPath = workspaceFolders[0].uri.fsPath;
+
+            const dockerfileContent = this._resolveDockerfileContent(dockerfileText);
+
+            if (!dockerfileContent.trim()) {
+              window.showErrorMessage("No Dockerfile content to build");
+              return;
+            }
+
+            const buildOptions: BuildOptions = {
+              imageName,
+              imageTag: imageTag || "latest",
+              dockerfileContent,
+              contextPath,
+              noCache: noCache ?? false,
+              pull: pull ?? false,
+              target,
+              platform,
+              buildArgs,
+            };
+
+            const onOutput = (line: string) => {
+              this._panel.webview.postMessage({
+                command: "buildOutput",
+                line,
+              });
+            };
+
+            const onProgress = (stage: string, progress: number) => {
+              this._panel.webview.postMessage({
+                command: "buildProgress",
+                stage,
+                progress,
+              });
+            };
+
+            try {
+              const result = await buildDockerImage(buildOptions, onOutput, onProgress);
+              
+              this._panel.webview.postMessage({
+                command: "buildComplete",
+                success: result.success,
+                imageId: result.imageId,
+                error: result.error,
+              });
+
+              // Refresh Docker Images tree view after successful build
+              if (result.success) {
+                const dockerImagesProvider = (global as any).dockerImagesTreeDataProvider;
+                if (dockerImagesProvider) {
+                  dockerImagesProvider.refresh();
+                }
+
+                // Show notification with action to reveal in Docker Images view
+                window.showInformationMessage(
+                  `✅ Image built: ${imageName}:${imageTag || "latest"}`,
+                  "View in Docker Images"
+                ).then((selection) => {
+                  if (selection === "View in Docker Images") {
+                    vscode.commands.executeCommand("dockforge-docker-images-view.focus");
+                  }
+                });
+              }
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              this._panel.webview.postMessage({
+                command: "buildComplete",
+                success: false,
+                error: errorMessage,
+              });
+            }
             return;
           }
 
           case "RUN_CONTAINER": {
             if (!(await ensureDockerReady())) return;
 
-            // TODO:
-            // Implement docker run container logic here
-            window.showInformationMessage(
-              "Docker is ready. Run Container can proceed."
-            );
+            const { 
+              imageName, 
+              imageTag, 
+              containerName, 
+              portMapping, 
+              envVariables,
+              detached = true,
+              remove = false,
+            } = message.payload || {};
+
+            if (!imageName) {
+              window.showErrorMessage("Image name is required");
+              return;
+            }
+
+            // Parse port mappings from string format "8080:80, 3000:3000"
+            const portMappings = portMapping
+              ? portMapping.split(",").map((p: string) => p.trim()).filter(Boolean)
+              : undefined;
+
+            // Parse environment variables from string format "KEY1=value1,KEY2=value2"
+            const envVars: Record<string, string> = {};
+            if (envVariables) {
+              envVariables.split(",").forEach((e: string) => {
+                const [key, value] = e.trim().split("=");
+                if (key && value !== undefined) {
+                  envVars[key.trim()] = value.trim();
+                }
+              });
+            }
+
+            const runOptions: RunOptions = {
+              imageName,
+              imageTag: imageTag || "latest",
+              containerName: containerName || undefined,
+              portMappings,
+              envVariables: Object.keys(envVars).length > 0 ? envVars : undefined,
+              detached,
+              remove,
+            };
+
+            const onOutput = (line: string) => {
+              this._panel.webview.postMessage({
+                command: "runOutput",
+                line,
+              });
+            };
+
+            try {
+              const result = await runDockerContainer(runOptions, onOutput);
+              
+              this._panel.webview.postMessage({
+                command: "runComplete",
+                success: result.success,
+                containerId: result.containerId,
+                containerName: result.containerName,
+                error: result.error,
+              });
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              this._panel.webview.postMessage({
+                command: "runComplete",
+                success: false,
+                error: errorMessage,
+              });
+            }
+            return;
+          }
+
+          case "BUILD_AND_RUN": {
+            if (!(await ensureDockerReady())) return;
+
+            const { 
+              imageName, 
+              imageTag, 
+              stages,
+              dockerfileText,
+              containerName, 
+              portMapping, 
+              envVariables,
+            } = message.payload || {};
+
+            if (!imageName) {
+              window.showErrorMessage("Image name is required");
+              return;
+            }
+
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders || workspaceFolders.length === 0) {
+              window.showErrorMessage("No workspace folder open");
+              return;
+            }
+
+            const contextPath = workspaceFolders[0].uri.fsPath;
+
+            const dockerfileContent = this._resolveDockerfileContent(dockerfileText);
+
+            if (!dockerfileContent.trim()) {
+              window.showErrorMessage("No Dockerfile content to build");
+              return;
+            }
+
+            const portMappings = portMapping
+              ? portMapping.split(",").map((p: string) => p.trim()).filter(Boolean)
+              : undefined;
+
+            const envVars: Record<string, string> = {};
+            if (envVariables) {
+              envVariables.split(",").forEach((e: string) => {
+                const [key, value] = e.trim().split("=");
+                if (key && value !== undefined) {
+                  envVars[key.trim()] = value.trim();
+                }
+              });
+            }
+
+            const onOutput = (line: string) => {
+              this._panel.webview.postMessage({
+                command: "buildRunOutput",
+                line,
+              });
+            };
+
+            try {
+              const result = await buildAndRun(
+                {
+                  imageName,
+                  imageTag: imageTag || "latest",
+                  dockerfileContent,
+                  contextPath,
+                },
+                {
+                  containerName,
+                  portMappings,
+                  envVariables: Object.keys(envVars).length > 0 ? envVars : undefined,
+                  detached: true,
+                },
+                onOutput
+              );
+              
+              this._panel.webview.postMessage({
+                command: "buildRunComplete",
+                buildSuccess: result.build.success,
+                runSuccess: result.run?.success ?? false,
+                imageId: result.build.imageId,
+                containerId: result.run?.containerId,
+                error: result.build.error || result.run?.error,
+              });
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              this._panel.webview.postMessage({
+                command: "buildRunComplete",
+                buildSuccess: false,
+                runSuccess: false,
+                error: errorMessage,
+              });
+            }
             return;
           }
           
