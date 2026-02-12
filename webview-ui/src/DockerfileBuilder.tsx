@@ -25,6 +25,27 @@ export default function DockerfileBuilder() {
   const stageCounterRef = useRef(0);
   const isInitialLoadRef = useRef(true);
   const isSavingRef = useRef(false);
+  const [testBuildLogs, setTestBuildLogs] = useState<
+    { kind: "stdout" | "stderr"; line: string; ts: number }[]
+  >([]);
+
+  const [testBuildStatus, setTestBuildStatus] = useState<
+    "idle" | "running" | "success" | "error"
+  >("idle");
+  const logRef = useRef<HTMLPreElement | null>(null);
+
+      useEffect(() => {
+      const el = logRef.current;
+      if (!el) return;
+
+      // Auto-scroll only if user is near the bottom
+      const isNearBottom =
+        el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+
+      if (isNearBottom) {
+        el.scrollTop = el.scrollHeight;
+      }
+    }, [testBuildLogs]);
 
   // Load Dockerfile data into state
   const loadDockerfileData = useCallback((data: DockerfileData) => {
@@ -72,9 +93,33 @@ export default function DockerfileBuilder() {
     // Listen for messages from extension
     const messageHandler = (event: MessageEvent) => {
       const message = event.data;
-      
+
       if (message.command === "loadDockerfileData" && message.data) {
         loadDockerfileData(message.data);
+      }
+
+      if (message.command === "testBuildStart") {
+        setTestBuildLogs([]);
+        setTestBuildStatus("running");
+      }
+
+      if (message.command === "testBuildLog") {
+        setTestBuildLogs(prev => [
+          ...prev,
+          { kind: message.kind, line: message.line, ts: message.ts ?? Date.now() }
+        ]);
+      }
+
+      if (message.command === "testBuildError") {
+        setTestBuildStatus("error");
+        setTestBuildLogs(prev => [
+          ...prev,
+          { kind: "stderr", line: message.message, ts: message.ts ?? Date.now() }
+        ]);
+      }
+
+      if (message.command === "testBuildDone") {
+        setTestBuildStatus(message.ok ? "success" : "error");
       }
     };
 
@@ -174,7 +219,7 @@ export default function DockerfileBuilder() {
       payload: {
         imageName: imageName || "dockforge-test",
         imageTag: imageTag || "latest",
-        dockerfileText,
+        stages,
       },
     });
   };
@@ -370,16 +415,92 @@ export default function DockerfileBuilder() {
         aria-orientation="vertical"
       />
 
-      {/* Right Panel - Preview */}
-      <Panel defaultSize={50} minSize={30}>
-        <div className="panel-scroll-container preview-panel-wrapper">
-          <DockerfilePreview 
+{/* Right Panel - Preview + Test Build */}
+<Panel defaultSize={50} minSize={30}>
+  <div className="panel-scroll-container preview-panel-wrapper">
+    <Group orientation="vertical" className="right-split">
+
+      {/* Top: Dockerfile Preview */}
+      <Panel defaultSize={50} minSize={25}>
+        <div className="right-top-scroll">
+          <DockerfilePreview
             dockerfileText={dockerfileText}
             onCopy={handleCopyDockerfile}
             onExport={handleExportDockerfile}
           />
         </div>
       </Panel>
+
+      {/* Horizontal resize handle */}
+      <Separator
+        className="resize-handle-horizontal"
+        aria-label="Resize right panels"
+        aria-orientation="horizontal"
+      />
+
+      {/* Bottom: Test Build Panel */}
+      <Panel defaultSize={50} minSize={25}>
+        <div className="right-bottom-scroll">
+          <div className="test-build-panel">
+            <div className="test-build-header">
+              <h3>Test Build Panel</h3>
+              <VSCodeButton onClick={handleRunTestBuild} disabled={testBuildStatus === "running"}>
+                {testBuildStatus === "running" ? "Running..." : "Run Test Build"}
+              </VSCodeButton>
+            </div>
+
+            <div className="test-build-status">
+              Status: {testBuildStatus}
+            </div>
+
+
+            <pre ref={logRef} className="test-build-log">
+              {testBuildLogs.map((l, i) => {
+                const s = l.line;
+
+                // Decide color by content first (because docker often uses stderr for normal output)
+                let cls = "log-out";
+
+                const lower = s.toLowerCase();
+
+                if (
+                  lower.includes("error") ||
+                  lower.includes("failed") ||
+                  lower.includes("executor failed") ||
+                  lower.includes("no such file") ||
+                  lower.includes("cannot")
+                ) {
+                  cls = "log-err";
+                } else if (lower.includes("warning") || lower.includes("deprecated")) {
+                  cls = "log-warn";
+                } else if (
+                  s.includes("DONE") ||
+                  lower.includes("successfully built") ||
+                  lower.includes("writing image") ||
+                  lower.includes("exporting to image")
+                ) {
+                  cls = "log-success";
+                } else if (s.startsWith("#") || s.includes("[") || lower.includes("building with")) {
+                  cls = "log-step";
+                } else if (l.kind === "stderr") {
+                  // only fallback to red if it wasn't classified above
+                  cls = "log-err";
+                }
+
+                return (
+                  <span key={i} className={`log-line ${cls}`}>
+                    {s + "\n"}
+                  </span>
+                );
+              })}
+            </pre>
+          </div>
+        </div>
+      </Panel>
+
+    </Group>
+  </div>
+</Panel>
     </Group>
   );
 }
