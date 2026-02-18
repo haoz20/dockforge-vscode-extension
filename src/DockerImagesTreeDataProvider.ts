@@ -117,10 +117,36 @@ export class DockerImagesTreeDataProvider implements vscode.TreeDataProvider<Doc
     }
   }
 
-  async deleteImage(imageId: string): Promise<void> {
+  async deleteImage(image: DockerImage): Promise<void> {
     try {
+      const fullName = `${image.repository}:${image.tag}`;
+
+      const method = await vscode.window.showQuickPick(
+        [
+          {
+            label: "$(tag) Delete by name",
+            description: fullName,
+            detail: "Removes only this tag. Other tags sharing the same image ID are kept.",
+            value: "name",
+          },
+          {
+            label: "$(package) Delete by image ID",
+            description: image.imageId.substring(0, 12),
+            detail: "Removes the image and ALL tags that reference this image ID.",
+            value: "id",
+          },
+        ],
+        { placeHolder: "How would you like to delete this image?" }
+      );
+
+      if (!method) {
+        return;
+      }
+
+      const target = method.value === "name" ? fullName : image.imageId;
+
       const choice = await vscode.window.showWarningMessage(
-        `Delete image ${imageId}?`,
+        `Delete ${target}?`,
         { modal: true },
         "Delete"
       );
@@ -129,8 +155,8 @@ export class DockerImagesTreeDataProvider implements vscode.TreeDataProvider<Doc
         return;
       }
 
-      await execAsync(`docker rmi ${imageId}`);
-      vscode.window.showInformationMessage(`Image ${imageId} deleted`);
+      await execAsync(`docker rmi ${target}`);
+      vscode.window.showInformationMessage(`Image ${target} deleted`);
       this.refresh();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -386,6 +412,12 @@ class DockerImageTreeItem extends DockerTreeItem {
       children.push(new DockerImageActionItem("Run Container", "run", this.image));
     }
 
+    // Add push action
+    children.push(new DockerImageActionItem("Push to Docker Hub", "push", this.image));
+
+    // Add tag/rename action
+    children.push(new DockerImageActionItem("Tag / Rename Image", "tag", this.image));
+
     // Add delete action
     children.push(new DockerImageActionItem("Delete Image", "delete", this.image));
 
@@ -404,12 +436,13 @@ class DockerImageInfoItem extends DockerTreeItem {
 class DockerImageActionItem extends DockerTreeItem {
   constructor(
     label: string,
-    public readonly action: "run" | "delete",
+    public readonly action: "run" | "delete" | "push" | "tag",
     public readonly image: DockerImage
   ) {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.contextValue = `dockerImageAction-${action}`;
-    this.iconPath = new vscode.ThemeIcon(action === "run" ? "play" : "trash");
+    const iconMap: Record<string, string> = { run: "play", delete: "trash", push: "cloud-upload", tag: "tag" };
+    this.iconPath = new vscode.ThemeIcon(iconMap[action] || "play");
     this.command = {
       command: `dockforge.${action}Image`,
       title: label,
