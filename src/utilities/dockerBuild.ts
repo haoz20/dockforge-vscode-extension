@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import { spawn, ChildProcess } from "child_process";
+import { ChildProcess } from "child_process";
+import { dockerSpawn } from "./dockerPath";
 
 export interface BuildOptions {
   imageName: string;
@@ -325,9 +326,9 @@ function executeDockerCommand(
   onProgress?: (stage: string, progress: number) => void
 ): Promise<{ success: boolean; error?: string; imageId?: string; containerId?: string }> {
   return new Promise((resolve) => {
-    const dockerProcess: ChildProcess = spawn("docker", args, {
+    const dockerProcess: ChildProcess = dockerSpawn(args, {
       shell: true,
-      env: { ...process.env, DOCKER_BUILDKIT: "1" }, // eslint-disable-line @typescript-eslint/naming-convention
+      env: { DOCKER_BUILDKIT: "1" }, // eslint-disable-line @typescript-eslint/naming-convention
     });
 
     let imageId: string | undefined;
