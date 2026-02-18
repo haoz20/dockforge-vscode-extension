@@ -1,9 +1,5 @@
 import * as vscode from "vscode";
-import { spawn } from "child_process";
-import { exec } from "child_process";
-import { promisify } from "util";
-
-const execAsync = promisify(exec);
+import { dockerExec, dockerSpawn } from "./dockerPath";
 
 export interface PushResult {
   success: boolean;
@@ -42,7 +38,7 @@ export async function tagImage(
   sourceImage: string,
   targetImage: string
 ): Promise<void> {
-  await execAsync(`docker tag ${sourceImage} ${targetImage}`);
+  await dockerExec(`docker tag ${sourceImage} ${targetImage}`);
 }
 
 /**
@@ -118,7 +114,7 @@ export async function pushImageToHub(
   output.show(true);
 
   return new Promise<PushResult>((resolve) => {
-    const child = spawn("docker", ["push", fullImage]);
+    const child = dockerSpawn(["push", fullImage]);
 
     let digest: string | undefined;
 
@@ -136,11 +132,11 @@ export async function pushImageToHub(
       }
     };
 
-    child.stdout.on("data", (data: Buffer) => {
+    child.stdout?.on("data", (data: Buffer) => {
       data.toString().split("\n").forEach(handleLine);
     });
 
-    child.stderr.on("data", (data: Buffer) => {
+    child.stderr?.on("data", (data: Buffer) => {
       data.toString().split("\n").forEach(handleLine);
     });
 

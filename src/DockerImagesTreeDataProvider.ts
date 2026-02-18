@@ -1,8 +1,5 @@
 import * as vscode from "vscode";
-import { exec } from "child_process";
-import { promisify } from "util";
-
-const execAsync = promisify(exec);
+import { dockerExec } from "./utilities/dockerPath";
 
 export interface DockerImage {
   repository: string;
@@ -73,7 +70,7 @@ export class DockerImagesTreeDataProvider implements vscode.TreeDataProvider<Doc
     try {
       // First, check if Docker daemon is running
       try {
-        await execAsync('docker info', { timeout: 3000 });
+        await dockerExec('docker info', { timeout: 3000 });
         this.dockerRunning = true;
       } catch (error) {
         this.dockerRunning = false;
@@ -84,7 +81,7 @@ export class DockerImagesTreeDataProvider implements vscode.TreeDataProvider<Doc
       }
 
       // Get all images
-      const { stdout: imagesOutput } = await execAsync(
+      const { stdout: imagesOutput } = await dockerExec(
         'docker images --format "{{.Repository}}|||{{.Tag}}|||{{.ID}}|||{{.CreatedAt}}|||{{.Size}}"'
       );
 
@@ -98,7 +95,7 @@ export class DockerImagesTreeDataProvider implements vscode.TreeDataProvider<Doc
         });
 
       // Get running containers
-      const { stdout: containersOutput } = await execAsync(
+      const { stdout: containersOutput } = await dockerExec(
         'docker ps --format "{{.ID}}|||{{.Image}}|||{{.Names}}|||{{.Status}}|||{{.Ports}}"'
       );
 
@@ -155,7 +152,7 @@ export class DockerImagesTreeDataProvider implements vscode.TreeDataProvider<Doc
         return;
       }
 
-      await execAsync(`docker rmi ${target}`);
+      await dockerExec(`docker rmi ${target}`);
       vscode.window.showInformationMessage(`Image ${target} deleted`);
       this.refresh();
     } catch (error) {
@@ -166,7 +163,7 @@ export class DockerImagesTreeDataProvider implements vscode.TreeDataProvider<Doc
 
   async stopContainer(containerId: string): Promise<void> {
     try {
-      await execAsync(`docker stop ${containerId}`);
+      await dockerExec(`docker stop ${containerId}`);
       vscode.window.showInformationMessage(`Container ${containerId} stopped`);
       this.refresh();
     } catch (error) {
@@ -329,7 +326,7 @@ export class DockerImagesTreeDataProvider implements vscode.TreeDataProvider<Doc
       const command = `docker ${args.join(" ")}`;
       console.log("Running:", command);
 
-      const { stdout } = await execAsync(command);
+      const { stdout } = await dockerExec(command);
       const containerId = stdout.trim();
 
       vscode.window.showInformationMessage(

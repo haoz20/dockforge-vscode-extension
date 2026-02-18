@@ -1,8 +1,6 @@
 import * as vscode from "vscode";
+import { dockerExec, getDockerEnv } from "./dockerPath";
 import { exec } from "child_process";
-import { promisify } from "util";
-
-const execAsync = promisify(exec);
 
 /**
  * Manages Docker Hub authentication using VS Code's SecretStorage API.
@@ -42,7 +40,7 @@ export class DockerHubAuthManager {
       await new Promise<void>((resolve, reject) => {
         const child = exec(
           `docker login -u ${username} --password-stdin`,
-          { timeout: 30000 },
+          { timeout: 30000, env: getDockerEnv() },
           (error, _stdout, stderr) => {
             if (error) {
               reject(new Error(stderr || error.message));
@@ -74,7 +72,7 @@ export class DockerHubAuthManager {
    */
   async logout(): Promise<void> {
     try {
-      await execAsync("docker logout", { timeout: 10000 });
+      await dockerExec("docker logout", { timeout: 10000 });
     } catch {
       // Ignore logout errors
     }

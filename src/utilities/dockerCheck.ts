@@ -1,15 +1,13 @@
 import * as vscode from "vscode";
-import { exec } from "child_process";
+import { dockerExec } from "./dockerPath";
 
 /**
  * Check whether Docker CLI is installed
  */
 export function checkDockerInstalled(): Promise<boolean> {
-  return new Promise((resolve) => {
-    exec("docker --version", (error) => {
-      resolve(!error); // use !error for production
-    });
-  });
+  return dockerExec("docker --version")
+    .then(() => true)
+    .catch(() => false);
 }
 
 /**
@@ -33,11 +31,9 @@ export async function promptInstallDocker() {
  * Check whether Docker daemon (Docker Desktop) is running
  */
 export function checkDockerRunning(): Promise<boolean> {
-  return new Promise((resolve) => {
-    exec("docker info", (error) => {
-      resolve(!error);
-    });
-  });
+  return dockerExec("docker info")
+    .then(() => true)
+    .catch(() => false);
 }
 
 /**

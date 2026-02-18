@@ -12,6 +12,7 @@ import { getNonce } from "../utilities/getNonce";
 import { DockerfileData } from "../types/DockerfileData";
 import { ensureDockerReady } from "../utilities/dockerCheck";
 import { fetchDockerHubTags, searchDockerHubRepositories } from "../utilities/dockerHubApi";
+import { dockerSpawn } from "../utilities/dockerPath";
 
 import { 
   buildDockerImage, 
@@ -24,7 +25,6 @@ import {
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import { spawn } from "child_process";
 import * as os from "os";
 
 /**
@@ -767,7 +767,7 @@ export class DockForgePanel {
 
 private _runDockerBuildAndStreamLogs(args: string[]) {
   return new Promise<number>((resolve) => {
-    const proc = spawn("docker", args, { shell: false });
+    const proc = dockerSpawn(args, { shell: false });
 
     const send = (kind: "stdout" | "stderr", chunk: any) => {
       const text = chunk.toString();
@@ -783,8 +783,8 @@ private _runDockerBuildAndStreamLogs(args: string[]) {
       });
     };
 
-    proc.stdout.on("data", (d) => send("stdout", d));
-    proc.stderr.on("data", (d) => send("stderr", d));
+    proc.stdout?.on("data", (d) => send("stdout", d));
+    proc.stderr?.on("data", (d) => send("stderr", d));
 
     proc.on("close", (code) => resolve(code ?? 0));
     proc.on("error", (err) => {

@@ -205,12 +205,9 @@ export function activate(context: ExtensionContext) {
 
         case "inspect":
           // Show container details in output channel
-          const { exec } = require("child_process");
-          const { promisify } = require("util");
-          const execAsync = promisify(exec);
-          
           try {
-            const { stdout } = await execAsync(`docker inspect ${containerId}`);
+            const { dockerExec: dockerExecFn } = require("./utilities/dockerPath");
+            const { stdout } = await dockerExecFn(`docker inspect ${containerId}`);
             const details = JSON.parse(stdout)[0];
             
             const info = `
@@ -313,12 +310,10 @@ Networks: ${Object.keys(details.NetworkSettings.Networks).join(", ")}
         imageTag = image.tag;
       } else {
         // Called from sidebar push button – let user pick a local image
-        const { exec: execCb } = require("child_process");
-        const { promisify } = require("util");
-        const execA = promisify(execCb);
+        const { dockerExec: dockerExecFn } = require("./utilities/dockerPath");
 
         try {
-          const { stdout } = await execA(
+          const { stdout } = await dockerExecFn(
             'docker images --format "{{.Repository}}:{{.Tag}}"'
           );
           const images: string[] = stdout
@@ -370,12 +365,10 @@ Networks: ${Object.keys(details.NetworkSettings.Networks).join(", ")}
         imageTag = image.tag;
       } else {
         // Let user pick an image
-        const { exec: execCb } = require("child_process");
-        const { promisify } = require("util");
-        const execA = promisify(execCb);
+        const { dockerExec: dockerExecFn } = require("./utilities/dockerPath");
 
         try {
-          const { stdout } = await execA(
+          const { stdout } = await dockerExecFn(
             'docker images --format "{{.Repository}}:{{.Tag}}"'
           );
           const images: string[] = stdout
