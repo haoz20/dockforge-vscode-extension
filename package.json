@@ -3,7 +3,7 @@
   "publisher": "dockforge",
   "displayName": "DockForge",
   "description": "A VS Code extension for Docker and DevContainer management with React + Vite and the Webview UI Toolkit.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -107,6 +107,24 @@
         "command": "dockforge.openInDockerDesktop",
         "title": "Open in Docker Desktop",
         "icon": "$(link-external)"
+      },
+      {
+        "command": "dockforge.pushImage",
+        "title": "Push to Docker Hub",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "dockforge.dockerHubLogin",
+        "title": "DockForge: Docker Hub Login"
+      },
+      {
+        "command": "dockforge.dockerHubLogout",
+        "title": "DockForge: Docker Hub Logout"
+      },
+      {
+        "command": "dockforge.tagImage",
+        "title": "Tag / Rename Image",
+        "icon": "$(tag)"
       }
     ],
     "menus": {
@@ -131,6 +149,16 @@
         {
           "command": "dockforge.deleteDockerfile",
           "when": "view == dockforge-dockerfilesview && viewItem == dockerfileItem",
+          "group": "inline"
+        },
+        {
+          "command": "dockforge.pushImage",
+          "when": "view == dockforge-docker-images-view && viewItem == dockerImage",
+          "group": "inline"
+        },
+        {
+          "command": "dockforge.tagImage",
+          "when": "view == dockforge-docker-images-view && viewItem == dockerImage",
           "group": "inline"
         }
       ]
