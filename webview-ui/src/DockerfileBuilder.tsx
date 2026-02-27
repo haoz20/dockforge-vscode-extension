@@ -25,6 +25,7 @@ export default function DockerfileBuilder() {
   const stageCounterRef = useRef(0);
   const isInitialLoadRef = useRef(true);
   const isSavingRef = useRef(false);
+  const [previewPanelSize, setPreviewPanelSize] = useState(50);
   const [testBuildLogs, setTestBuildLogs] = useState<
     { kind: "stdout" | "stderr"; line: string; ts: number }[]
   >([]);
@@ -415,92 +416,92 @@ export default function DockerfileBuilder() {
         aria-orientation="vertical"
       />
 
-{/* Right Panel - Preview + Test Build */}
-<Panel defaultSize={50} minSize={30}>
-  <div className="panel-scroll-container preview-panel-wrapper">
-    <Group orientation="vertical" className="right-split">
+      {/* Right Panel - Preview and Test Build */}
+      <Panel 
+        defaultSize={50} 
+        minSize={30}
+        onResize={(size) => setPreviewPanelSize(size.asPercentage)}
+      >
+        <Group orientation="vertical" className="right-panel-group">
+          {/* Top: Preview */}
+          <Panel defaultSize={60} minSize={30}>
+            <div className="panel-scroll-container preview-panel-wrapper">
+              <DockerfilePreview 
+                dockerfileText={dockerfileText}
+                onCopy={handleCopyDockerfile}
+                onExport={handleExportDockerfile}
+                panelSize={previewPanelSize}
+              />
+            </div>
+          </Panel>
 
-      {/* Top: Dockerfile Preview */}
-      <Panel defaultSize={50} minSize={25}>
-        <div className="right-top-scroll">
-          <DockerfilePreview
-            dockerfileText={dockerfileText}
-            onCopy={handleCopyDockerfile}
-            onExport={handleExportDockerfile}
+          {/* Horizontal resize handle */}
+          <Separator
+            className="resize-handle-horizontal"
+            aria-label="Resize right panels"
+            aria-orientation="horizontal"
           />
-        </div>
-      </Panel>
 
-      {/* Horizontal resize handle */}
-      <Separator
-        className="resize-handle-horizontal"
-        aria-label="Resize right panels"
-        aria-orientation="horizontal"
-      />
+          {/* Bottom: Test Build Panel */}
+          <Panel defaultSize={40} minSize={20}>
+            <div className="right-bottom-scroll">
+              <div className="test-build-panel">
+                <div className="test-build-header">
+                  <h3>Test Build Panel</h3>
+                  <VSCodeButton onClick={handleRunTestBuild} disabled={testBuildStatus === "running"}>
+                    {testBuildStatus === "running" ? "Running..." : "Run Test Build"}
+                  </VSCodeButton>
+                </div>
 
-      {/* Bottom: Test Build Panel */}
-      <Panel defaultSize={50} minSize={25}>
-        <div className="right-bottom-scroll">
-          <div className="test-build-panel">
-            <div className="test-build-header">
-              <h3>Test Build Panel</h3>
-              <VSCodeButton onClick={handleRunTestBuild} disabled={testBuildStatus === "running"}>
-                {testBuildStatus === "running" ? "Running..." : "Run Test Build"}
-              </VSCodeButton>
+                <div className="test-build-status">
+                  Status: {testBuildStatus}
+                </div>
+
+                <pre ref={logRef} className="test-build-log">
+                  {testBuildLogs.map((l, i) => {
+                    const s = l.line;
+
+                    // Decide color by content first (because docker often uses stderr for normal output)
+                    let cls = "log-out";
+
+                    const lower = s.toLowerCase();
+
+                    if (
+                      lower.includes("error") ||
+                      lower.includes("failed") ||
+                      lower.includes("executor failed") ||
+                      lower.includes("no such file") ||
+                      lower.includes("cannot")
+                    ) {
+                      cls = "log-err";
+                    } else if (lower.includes("warning") || lower.includes("deprecated")) {
+                      cls = "log-warn";
+                    } else if (
+                      s.includes("DONE") ||
+                      lower.includes("successfully built") ||
+                      lower.includes("writing image") ||
+                      lower.includes("exporting to image")
+                    ) {
+                      cls = "log-success";
+                    } else if (s.startsWith("#") || s.includes("[") || lower.includes("building with")) {
+                      cls = "log-step";
+                    } else if (l.kind === "stderr") {
+                      // only fallback to red if it wasn't classified above
+                      cls = "log-err";
+                    }
+
+                    return (
+                      <span key={i} className={`log-line ${cls}`}>
+                        {s + "\n"}
+                      </span>
+                    );
+                  })}
+                </pre>
+              </div>
             </div>
-
-            <div className="test-build-status">
-              Status: {testBuildStatus}
-            </div>
-
-
-            <pre ref={logRef} className="test-build-log">
-              {testBuildLogs.map((l, i) => {
-                const s = l.line;
-
-                // Decide color by content first (because docker often uses stderr for normal output)
-                let cls = "log-out";
-
-                const lower = s.toLowerCase();
-
-                if (
-                  lower.includes("error") ||
-                  lower.includes("failed") ||
-                  lower.includes("executor failed") ||
-                  lower.includes("no such file") ||
-                  lower.includes("cannot")
-                ) {
-                  cls = "log-err";
-                } else if (lower.includes("warning") || lower.includes("deprecated")) {
-                  cls = "log-warn";
-                } else if (
-                  s.includes("DONE") ||
-                  lower.includes("successfully built") ||
-                  lower.includes("writing image") ||
-                  lower.includes("exporting to image")
-                ) {
-                  cls = "log-success";
-                } else if (s.startsWith("#") || s.includes("[") || lower.includes("building with")) {
-                  cls = "log-step";
-                } else if (l.kind === "stderr") {
-                  // only fallback to red if it wasn't classified above
-                  cls = "log-err";
-                }
-
-                return (
-                  <span key={i} className={`log-line ${cls}`}>
-                    {s + "\n"}
-                  </span>
-                );
-              })}
-            </pre>
-          </div>
-        </div>
+          </Panel>
+        </Group>
       </Panel>
-
-    </Group>
-  </div>
-</Panel>
     </Group>
   );
 }
