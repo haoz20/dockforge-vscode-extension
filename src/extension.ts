@@ -1,10 +1,14 @@
-import { commands, ExtensionContext, window, workspace } from "vscode";
+import { commands, ExtensionContext, window, workspace, Uri, env } from "vscode";
+import * as vscode from "vscode";
 import { DockForgePanel } from "./panels/DockForgePanel";
 import { DockerHubViewProvider } from "./DockerHubViewProvider";
 import { DockerHubPanel } from "./panels/DockerHubPanel";
 import { DockerfileTreeDataProvider } from "./DockerfileTreeDataProvider";
+import { DockerImagesTreeDataProvider } from "./DockerImagesTreeDataProvider";
 import { checkDockerInstalled } from "./utilities/dockerCheck";
 import { promptInstallDocker } from "./utilities/dockerCheck";
+import { DockerHubAuthManager } from "./utilities/dockerHubAuth";
+import { interactivePush, interactiveTag } from "./utilities/dockerHubPush";
 
 export function activate(context: ExtensionContext) {
   console.log("DockForge extension is now active!");
@@ -19,7 +23,10 @@ export function activate(context: ExtensionContext) {
   const workspaceRoot = workspace.workspaceFolders?.[0]?.uri.fsPath || "";
 
   const dockerHubViewProvider = new DockerHubViewProvider(context.extensionUri);
-  
+
+  // Create Docker Hub auth manager (stores credentials in OS keychain)
+  const dockerHubAuthManager = new DockerHubAuthManager(context.secrets);
+  dockerHubViewProvider.setAuthManager(dockerHubAuthManager);
 
   // Create tree data provider for Dockerfiles with global state memento for persistence
   const dockerfileTreeDataProvider = new DockerfileTreeDataProvider(
@@ -32,6 +39,16 @@ export function activate(context: ExtensionContext) {
   const dockerfilesView = window.createTreeView("dockforge-dockerfilesview", {
     treeDataProvider: dockerfileTreeDataProvider,
   });
+
+  // Create Docker Images tree data provider
+  const dockerImagesTreeDataProvider = new DockerImagesTreeDataProvider();
+  const dockerImagesView = window.createTreeView("dockforge-docker-images-view", {
+    treeDataProvider: dockerImagesTreeDataProvider,
+    showCollapseAll: true,
+  });
+
+  // Make the provider globally accessible for refresh after builds
+  (global as any).dockerImagesTreeDataProvider = dockerImagesTreeDataProvider;
 
   // Create the show DockForge command (opens the main panel)
   const showDockForgeCommand = commands.registerCommand(
@@ -126,10 +143,271 @@ export function activate(context: ExtensionContext) {
     refreshCommand,
     newDockerfileCommand,
     dockerfilesView,
+    dockerImagesView,
     window.registerWebviewViewProvider(
       DockerHubViewProvider.viewType,
       dockerHubViewProvider
     )
   );
-}
 
+  // Register Docker Images commands
+  const refreshImagesCommand = commands.registerCommand(
+    "dockforge.refreshDockerImages",
+    () => dockerImagesTreeDataProvider.refresh()
+  );
+
+  const runImageCommand = commands.registerCommand(
+    "dockforge.runImage",
+    async (image: any) => {
+      await dockerImagesTreeDataProvider.runContainer(image);
+    }
+  );
+
+  const deleteImageCommand = commands.registerCommand(
+    "dockforge.deleteImage",
+    async (image: any) => {
+      await dockerImagesTreeDataProvider.deleteImage(image);
+    }
+  );
+
+  const stopContainerCommand = commands.registerCommand(
+    "dockforge.stopContainer",
+    async (containerId: string) => {
+      await dockerImagesTreeDataProvider.stopContainer(containerId);
+    }
+  );
+
+  const openInDockerDesktopCommand = commands.registerCommand(
+    "dockforge.openInDockerDesktop",
+    async (containerId: string) => {
+      // Show quick pick with options
+      const action = await window.showQuickPick(
+        [
+          { label: "$(terminal) View Container Logs", value: "logs" },
+          { label: "$(info) Show Container Details", value: "inspect" },
+          { label: "$(copy) Copy Container ID", value: "copy" },
+          { label: "$(link-external) Try Open Docker Desktop", value: "desktop" }
+        ],
+        { placeHolder: `Container: ${containerId.substring(0, 12)}` }
+      );
+
+      if (!action) {
+        return;
+      }
+
+      switch (action.value) {
+        case "logs":
+          // Open terminal showing container logs
+          const terminal = window.createTerminal(`Container Logs: ${containerId.substring(0, 12)}`);
+          terminal.show();
+          terminal.sendText(`docker logs -f ${containerId}`);
+          break;
+
+        case "inspect":
+          // Show container details in output channel
+          try {
+            const { dockerExec: dockerExecFn } = require("./utilities/dockerPath");
+            const { stdout } = await dockerExecFn(`docker inspect ${containerId}`);
+            const details = JSON.parse(stdout)[0];
+            
+            const info = `
+Container Details
+=================
+ID: ${details.Id.substring(0, 12)}
+Name: ${details.Name.replace("/", "")}
+Image: ${details.Config.Image}
+Status: ${details.State.Status}
+Created: ${details.Created}
+Ports: ${JSON.stringify(details.NetworkSettings.Ports, null, 2)}
+Networks: ${Object.keys(details.NetworkSettings.Networks).join(", ")}
+            `.trim();
+            
+            const outputChannel = vscode.window.createOutputChannel("Docker Container Details");
+            outputChannel.clear();
+            outputChannel.appendLine(info);
+            outputChannel.show();
+          } catch (error) {
+            window.showErrorMessage(`Failed to inspect container: ${error}`);
+          }
+          break;
+
+        case "copy":
+          // Copy container ID to clipboard
+          await env.clipboard.writeText(containerId);
+          window.showInformationMessage(`Container ID copied: ${containerId.substring(0, 12)}`);
+          break;
+
+        case "desktop":
+          // Try to open Docker Desktop (may not work on all systems)
+          try {
+            const url = `docker-desktop://dashboard/containers/${containerId}`;
+            const uri = Uri.parse(url);
+            await env.openExternal(uri);
+          } catch (error) {
+            window.showWarningMessage(
+              "Unable to open Docker Desktop. Use 'docker ps' in terminal to view containers.",
+              "Open Terminal"
+            ).then(selection => {
+              if (selection === "Open Terminal") {
+                const term = window.createTerminal("Docker");
+                term.show();
+                term.sendText("docker ps");
+              }
+            });
+          }
+          break;
+      }
+    }
+  );
+
+  context.subscriptions.push(
+    refreshImagesCommand,
+    runImageCommand,
+    deleteImageCommand,
+    stopContainerCommand,
+    openInDockerDesktopCommand
+  );
+
+  // ── Docker Hub Auth & Push commands ──────────────────────────────
+
+  const dockerHubLoginCommand = commands.registerCommand(
+    "dockforge.dockerHubLogin",
+    async () => {
+      await dockerHubAuthManager.promptLogin();
+    }
+  );
+
+  const dockerHubLogoutCommand = commands.registerCommand(
+    "dockforge.dockerHubLogout",
+    async () => {
+      await dockerHubAuthManager.logout();
+      window.showInformationMessage("Logged out of Docker Hub");
+    }
+  );
+
+  const pushImageCommand = commands.registerCommand(
+    "dockforge.pushImage",
+    async (image?: any) => {
+      // Ensure Docker is available
+      const dockerInstalled = await checkDockerInstalled();
+      if (!dockerInstalled) {
+        await promptInstallDocker();
+        return;
+      }
+
+      // Ensure user is logged in
+      const isAuth = await dockerHubAuthManager.ensureAuthenticated();
+      if (!isAuth) {
+        return;
+      }
+
+      let imageName: string;
+      let imageTag: string;
+
+      if (image && image.repository && image.tag) {
+        // Called from tree view context with a specific image
+        imageName = image.repository;
+        imageTag = image.tag;
+      } else {
+        // Called from sidebar push button – let user pick a local image
+        const { dockerExec: dockerExecFn } = require("./utilities/dockerPath");
+
+        try {
+          const { stdout } = await dockerExecFn(
+            'docker images --format "{{.Repository}}:{{.Tag}}"'
+          );
+          const images: string[] = stdout
+            .trim()
+            .split("\n")
+            .filter((l: string) => l && !l.includes("<none>"));
+
+          if (images.length === 0) {
+            window.showWarningMessage("No local Docker images found. Build an image first.");
+            return;
+          }
+
+          const picked = await window.showQuickPick(images, {
+            placeHolder: "Select an image to push",
+          });
+
+          if (!picked) {
+            return;
+          }
+
+          const [name, ...tagParts] = picked.split(":");
+          imageName = name;
+          imageTag = tagParts.join(":") || "latest";
+        } catch {
+          window.showErrorMessage("Failed to list local Docker images");
+          return;
+        }
+      }
+
+      await interactivePush(imageName, imageTag);
+      dockerImagesTreeDataProvider.refresh();
+    }
+  );
+
+  const tagImageCommand = commands.registerCommand(
+    "dockforge.tagImage",
+    async (image?: any) => {
+      const dockerInstalled = await checkDockerInstalled();
+      if (!dockerInstalled) {
+        await promptInstallDocker();
+        return;
+      }
+
+      let imageName: string;
+      let imageTag: string;
+
+      if (image && image.repository && image.tag) {
+        imageName = image.repository;
+        imageTag = image.tag;
+      } else {
+        // Let user pick an image
+        const { dockerExec: dockerExecFn } = require("./utilities/dockerPath");
+
+        try {
+          const { stdout } = await dockerExecFn(
+            'docker images --format "{{.Repository}}:{{.Tag}}"'
+          );
+          const images: string[] = stdout
+            .trim()
+            .split("\n")
+            .filter((l: string) => l && !l.includes("<none>"));
+
+          if (images.length === 0) {
+            window.showWarningMessage("No local Docker images found.");
+            return;
+          }
+
+          const picked = await window.showQuickPick(images, {
+            placeHolder: "Select an image to tag / rename",
+          });
+
+          if (!picked) {
+            return;
+          }
+
+          const [name, ...tagParts] = picked.split(":");
+          imageName = name;
+          imageTag = tagParts.join(":") || "latest";
+        } catch {
+          window.showErrorMessage("Failed to list local Docker images");
+          return;
+        }
+      }
+
+      await interactiveTag(imageName, imageTag);
+      dockerImagesTreeDataProvider.refresh();
+    }
+  );
+
+  context.subscriptions.push(
+    dockerHubLoginCommand,
+    dockerHubLogoutCommand,
+    pushImageCommand,
+    tagImageCommand,
+    dockerHubAuthManager
+  );
+}

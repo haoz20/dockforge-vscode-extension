@@ -22,13 +22,31 @@ export default function DockerfileBuilder() {
   const [stages, setStages] = useState<StageData[]>([]);
   const [imageName, setImageName] = useState("");
   const [imageTag, setImageTag] = useState("");
-  const [containerName, setContainerName] = useState("");
-  const [portMapping, setPortMapping] = useState("");
-  const [envVariables, setEnvVariables] = useState("");
   const stageCounterRef = useRef(0);
   const isInitialLoadRef = useRef(true);
   const isSavingRef = useRef(false);
   const [previewPanelSize, setPreviewPanelSize] = useState(50);
+  const [testBuildLogs, setTestBuildLogs] = useState<
+    { kind: "stdout" | "stderr"; line: string; ts: number }[]
+  >([]);
+
+  const [testBuildStatus, setTestBuildStatus] = useState<
+    "idle" | "running" | "success" | "error"
+  >("idle");
+  const logRef = useRef<HTMLPreElement | null>(null);
+
+      useEffect(() => {
+      const el = logRef.current;
+      if (!el) return;
+
+      // Auto-scroll only if user is near the bottom
+      const isNearBottom =
+        el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+
+      if (isNearBottom) {
+        el.scrollTop = el.scrollHeight;
+      }
+    }, [testBuildLogs]);
 
   // Load Dockerfile data into state
   const loadDockerfileData = useCallback((data: DockerfileData) => {
@@ -54,23 +72,6 @@ export default function DockerfileBuilder() {
     if (data.runtime) {
       setImageName(data.runtime.imageName || "");
       setImageTag(data.runtime.imageTag || "latest");
-      setContainerName(data.runtime.containerName || "");
-      
-      // Load port mappings
-      if (data.runtime.portMappings && data.runtime.portMappings.length > 0) {
-        const portStr = data.runtime.portMappings
-          .map(p => `${p.hostPort || p.containerPort}:${p.containerPort}`)
-          .join(", ");
-        setPortMapping(portStr);
-      }
-
-      // Load environment variables
-      if (data.runtime.environmentVariables && data.runtime.environmentVariables.length > 0) {
-        const envStr = data.runtime.environmentVariables
-          .map(e => `${e.key}=${e.value}`)
-          .join(",");
-        setEnvVariables(envStr);
-      }
     }
 
     // Mark that initial load is complete after a small delay
@@ -93,8 +94,33 @@ export default function DockerfileBuilder() {
     // Listen for messages from extension
     const messageHandler = (event: MessageEvent) => {
       const message = event.data;
+
       if (message.command === "loadDockerfileData" && message.data) {
         loadDockerfileData(message.data);
+      }
+
+      if (message.command === "testBuildStart") {
+        setTestBuildLogs([]);
+        setTestBuildStatus("running");
+      }
+
+      if (message.command === "testBuildLog") {
+        setTestBuildLogs(prev => [
+          ...prev,
+          { kind: message.kind, line: message.line, ts: message.ts ?? Date.now() }
+        ]);
+      }
+
+      if (message.command === "testBuildError") {
+        setTestBuildStatus("error");
+        setTestBuildLogs(prev => [
+          ...prev,
+          { kind: "stderr", line: message.message, ts: message.ts ?? Date.now() }
+        ]);
+      }
+
+      if (message.command === "testBuildDone") {
+        setTestBuildStatus(message.ok ? "success" : "error");
       }
     };
 
@@ -115,49 +141,7 @@ export default function DockerfileBuilder() {
     const dockerfileName = window.dockerfileName || "Dockerfile";
     const now = new Date().toISOString();
 
-    // Parse port mappings with validation
-    const portMappings = portMapping
-      .split(",")
-      .map(p => p.trim())
-      .filter(p => p.length > 0)
-      .map(p => {
-        const [host, container] = p.split(":");
-        const containerPort = parseInt(container || host, 10);
-        const hostPort = container ? parseInt(host, 10) : undefined;
 
-        // Skip invalid entries where parsing failed
-        if (
-          Number.isNaN(containerPort) ||
-          (hostPort !== undefined && Number.isNaN(hostPort))
-        ) {
-          return null;
-        }
-
-        const portMapping: { containerPort: number; hostPort?: number; protocol: "tcp" } = {
-          containerPort,
-          protocol: "tcp" as const
-        };
-        
-        if (hostPort !== undefined) {
-          portMapping.hostPort = hostPort;
-        }
-
-        return portMapping;
-      })
-      .filter(
-        (mapping): mapping is { containerPort: number; hostPort?: number; protocol: "tcp" } =>
-          mapping !== null
-      );
-
-    // Parse environment variables
-    const environmentVariables = envVariables
-      .split(",")
-      .map(e => e.trim())
-      .filter(e => e.length > 0)
-      .map(e => {
-        const [key, value] = e.split("=", 2);
-        return { key: key.trim(), value: value?.trim() || "" };
-      });
 
     const data: DockerfileData = {
       id: dockerfileId,
@@ -178,10 +162,7 @@ export default function DockerfileBuilder() {
       })),
       runtime: {
         imageName: imageName || dockerfileName.toLowerCase().replace(/\s+/g, "-"),
-        imageTag: imageTag || "latest",
-        containerName: containerName || undefined,
-        portMappings: portMappings.length > 0 ? portMappings : undefined,
-        environmentVariables: environmentVariables.length > 0 ? environmentVariables : undefined
+        imageTag: imageTag || "latest"
       }
     };
 
@@ -196,7 +177,7 @@ export default function DockerfileBuilder() {
     setTimeout(() => {
       isSavingRef.current = false;
     }, 100);
-  }, [stages, imageName, imageTag, containerName, portMapping, envVariables]);
+  }, [stages, imageName, imageTag]);
 
   const addStage = () => {
     stageCounterRef.current += 1;
@@ -231,46 +212,28 @@ export default function DockerfileBuilder() {
     }, 1000); // Save 1 second after last change
 
     return () => clearTimeout(timer);
-  }, [stages, imageName, imageTag, containerName, portMapping, envVariables, saveDockerfileData]);
+  }, [stages, imageName, imageTag, saveDockerfileData]);
 
   const handleRunTestBuild = () => {
     vscode.postMessage({
-      type: "TEST_BUILD", // Delegate build request to extension host (Docker checks + build execution handled there)
+      type: "TEST_BUILD",
       payload: {
-        imageName,
-        imageTag,
+        imageName: imageName || "dockforge-test",
+        imageTag: imageTag || "latest",
         stages,
       },
     });
-
-    // TODO: Implement docker build logic
   };
 
-    const handleBuildImage = () => {
-      vscode.postMessage({
-        type: "BUILD_IMAGE", // Delegate build request to extension host (Docker checks + build execution handled there)
-        payload: {
-          imageName,
-          imageTag,
-          stages,
-        },
-      });
-
-      // TODO: Implement docker build logic
-  };
-
-  const handleRunContainer = () => {
+  const handleBuildImage = () => {
     vscode.postMessage({
-      type: "RUN_CONTAINER", // Delegate build request to extension host (Docker checks + build execution handled there)
+      type: "BUILD_IMAGE",
       payload: {
         imageName,
         imageTag,
-        containerName,
-        portMapping,
-        envVariables,
+        dockerfileText,
       },
     });
-    // TODO: Implement docker run logic
   };
 
   const handleInsertToWorkspace = () => {
@@ -308,41 +271,12 @@ export default function DockerfileBuilder() {
       })),
       runtime: {
         imageName: imageName || "my-app",
-        imageTag: imageTag || "latest",
-        containerName: containerName || undefined,
-        portMappings: portMapping
-          .split(",")
-          .map(p => p.trim())
-          .filter(p => p.length > 0)
-          .map(p => {
-            const [host, container] = p.split(":");
-            const containerPort = parseInt(container || host, 10);
-            const hostPort = container ? parseInt(host, 10) : undefined;
-            
-            if (Number.isNaN(containerPort) || (hostPort !== undefined && Number.isNaN(hostPort))) {
-              return null;
-            }
-            
-            return {
-              containerPort,
-              hostPort,
-              protocol: "tcp" as const
-            };
-          })
-          .filter((m): m is NonNullable<typeof m> => m !== null),
-        environmentVariables: envVariables
-          .split(",")
-          .map(e => e.trim())
-          .filter(e => e.length > 0)
-          .map(e => {
-            const [key, value] = e.split("=", 2);
-            return { key: key.trim(), value: value?.trim() || "" };
-          })
+        imageTag: imageTag || "latest"
       }
     };
     
     return generateDockerfile(data);
-  }, [stages, imageName, imageTag, containerName, portMapping, envVariables]);
+  }, [stages, imageName, imageTag]);
 
   const handleCopyDockerfile = () => {
     vscode.postMessage({
@@ -372,7 +306,7 @@ export default function DockerfileBuilder() {
               </VSCodeButton>
               <VSCodeButton onClick={addStage}>+ Add Stage</VSCodeButton>
             </div>
-          </div>
+        </div>
 
       {/* Render Stage Cards */}
       {stages.map((stage, index) => (
@@ -432,10 +366,10 @@ export default function DockerfileBuilder() {
         </div>
       </div>
 
-      {/* Build & Run Image Section */}
+      {/* Build Image Section */}
       <div className="build-run-section">
         <VSCodeDivider />
-        <h2 className="section-title">Build & Run Image</h2>
+        <h2 className="section-title">Build Image</h2>
 
         <div className="build-run-form">
           <div className="form-row">
@@ -455,37 +389,7 @@ export default function DockerfileBuilder() {
               <VSCodeTextField
                 value={imageTag}
                 onInput={(e: any) => setImageTag(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-field">
-              <label className="field-label">Container Name</label>
-              <VSCodeTextField
-                value={containerName}
-                onInput={(e: any) => setContainerName(e.target.value)}
-                placeholder="Auto-generated"
-              />
-            </div>
-
-            <div className="form-field">
-              <label className="field-label">Port Mapping</label>
-              <VSCodeTextField
-                value={portMapping}
-                onInput={(e: any) => setPortMapping(e.target.value)}
-                placeholder="8080:80"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-field full-width">
-              <label className="field-label">Environment Variables (comma-separated)</label>
-              <VSCodeTextField
-                value={envVariables}
-                onInput={(e: any) => setEnvVariables(e.target.value)}
-                placeholder="NODE_ENV=production,PORT=3000"
+                placeholder="latest"
               />
             </div>
           </div>
@@ -494,17 +398,16 @@ export default function DockerfileBuilder() {
             <VSCodeButton className="build-button" onClick={handleBuildImage}>
               <span className="button-icon">🔨</span> Build Image
             </VSCodeButton>
-            <VSCodeButton className="run-button green-button" onClick={handleRunContainer}>
-              <span className="button-icon">▶</span> Run Container
-            </VSCodeButton>
           </div>
+          
+          <p style={{ marginTop: "12px", fontSize: "13px", color: "var(--vscode-descriptionForeground)" }}>
+            💡 After building, run your image from the <strong>Docker Images</strong> view in the sidebar.
+          </p>
         </div>
       </div>
-
         </div>
-
-        </div>
-      </Panel>
+      </div>
+      </Panel>  
 
       {/* Resize Handle */}
       <Separator
@@ -513,20 +416,91 @@ export default function DockerfileBuilder() {
         aria-orientation="vertical"
       />
 
-      {/* Right Panel - Preview */}
+      {/* Right Panel - Preview and Test Build */}
       <Panel 
         defaultSize={50} 
         minSize={30}
         onResize={(size) => setPreviewPanelSize(size.asPercentage)}
       >
-        <div className="panel-scroll-container preview-panel-wrapper">
-          <DockerfilePreview 
-            dockerfileText={dockerfileText}
-            onCopy={handleCopyDockerfile}
-            onExport={handleExportDockerfile}
-            panelSize={previewPanelSize}
+        <Group orientation="vertical" className="right-panel-group">
+          {/* Top: Preview */}
+          <Panel defaultSize={60} minSize={30}>
+            <div className="panel-scroll-container preview-panel-wrapper">
+              <DockerfilePreview 
+                dockerfileText={dockerfileText}
+                onCopy={handleCopyDockerfile}
+                onExport={handleExportDockerfile}
+                panelSize={previewPanelSize}
+              />
+            </div>
+          </Panel>
+
+          {/* Horizontal resize handle */}
+          <Separator
+            className="resize-handle-horizontal"
+            aria-label="Resize right panels"
+            aria-orientation="horizontal"
           />
-        </div>
+
+          {/* Bottom: Test Build Panel */}
+          <Panel defaultSize={40} minSize={20}>
+            <div className="right-bottom-scroll">
+              <div className="test-build-panel">
+                <div className="test-build-header">
+                  <h3>Test Build Panel</h3>
+                  <VSCodeButton onClick={handleRunTestBuild} disabled={testBuildStatus === "running"}>
+                    {testBuildStatus === "running" ? "Running..." : "Run Test Build"}
+                  </VSCodeButton>
+                </div>
+
+                <div className="test-build-status">
+                  Status: {testBuildStatus}
+                </div>
+
+                <pre ref={logRef} className="test-build-log">
+                  {testBuildLogs.map((l, i) => {
+                    const s = l.line;
+
+                    // Decide color by content first (because docker often uses stderr for normal output)
+                    let cls = "log-out";
+
+                    const lower = s.toLowerCase();
+
+                    if (
+                      lower.includes("error") ||
+                      lower.includes("failed") ||
+                      lower.includes("executor failed") ||
+                      lower.includes("no such file") ||
+                      lower.includes("cannot")
+                    ) {
+                      cls = "log-err";
+                    } else if (lower.includes("warning") || lower.includes("deprecated")) {
+                      cls = "log-warn";
+                    } else if (
+                      s.includes("DONE") ||
+                      lower.includes("successfully built") ||
+                      lower.includes("writing image") ||
+                      lower.includes("exporting to image")
+                    ) {
+                      cls = "log-success";
+                    } else if (s.startsWith("#") || s.includes("[") || lower.includes("building with")) {
+                      cls = "log-step";
+                    } else if (l.kind === "stderr") {
+                      // only fallback to red if it wasn't classified above
+                      cls = "log-err";
+                    }
+
+                    return (
+                      <span key={i} className={`log-line ${cls}`}>
+                        {s + "\n"}
+                      </span>
+                    );
+                  })}
+                </pre>
+              </div>
+            </div>
+          </Panel>
+        </Group>
       </Panel>
     </Group>
   );

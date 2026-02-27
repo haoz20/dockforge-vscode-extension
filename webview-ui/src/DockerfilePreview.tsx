@@ -43,22 +43,22 @@ export default function DockerfilePreview({
     });
   };
 
-  const handleExport = () => {
-    if (onExport) {
-      onExport();
-    } else {
-      // Default export behavior - download as file
-      const blob = new Blob([dockerfileText], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'Dockerfile';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-  };
+  // const handleExport = () => {
+  //   if (onExport) {
+  //     onExport();
+  //   } else {
+  //     // Default export behavior - download as file
+  //     const blob = new Blob([dockerfileText], { type: 'text/plain' });
+  //     const url = URL.createObjectURL(blob);
+  //     const a = document.createElement('a');
+  //     a.href = url;
+  //     a.download = 'Dockerfile';
+  //     document.body.appendChild(a);
+  //     a.click();
+  //     document.body.removeChild(a);
+  //     URL.revokeObjectURL(url);
+  //   }
+  // };
 
   const toggleWordWrap = () => {
     setWordWrap(prev => prev === 'on' ? 'off' : 'on');
@@ -113,9 +113,6 @@ export default function DockerfilePreview({
           </VSCodeButton>
           <VSCodeButton onClick={handleCopy} title="Copy Dockerfile to clipboard">
             Copy
-          </VSCodeButton>
-          <VSCodeButton onClick={handleExport} title="Export Dockerfile">
-            Export
           </VSCodeButton>
         </div>
       </div>
