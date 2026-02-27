@@ -459,6 +459,50 @@ vscode-button.green-button:hover::part(control) {
 .resize-handle:hover::after {
   opacity: 0.3;
 }
+
+/* Horizontal resize handle for vertical split */
+.resize-handle-horizontal {
+  height: 8px;
+  background-color: var(--vscode-panel-border);
+  cursor: row-resize;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.resize-handle-horizontal:hover {
+  background-color: var(--vscode-focusBorder);
+}
+
+.resize-handle-horizontal:active {
+  background-color: var(--vscode-button-background);
+}
+
+.resize-handle-horizontal::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 3px;
+  background-color: var(--vscode-foreground);
+  opacity: 0;
+  border-radius: 2px;
+  transition: opacity 0.2s;
+}
+
+.resize-handle-horizontal:hover::after {
+  opacity: 0.3;
+}
+
+/* Right panel group (contains Preview and Test Build) */
+.right-panel-group {
+  height: 100%;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .test-build-placeholder {
   padding: 16px;
   height: 100%;
