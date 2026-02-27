@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import * as monaco from 'monaco-editor';
 import Editor, { loader } from "@monaco-editor/react";
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react";
@@ -22,14 +22,18 @@ interface DockerfilePreviewProps {
   dockerfileText: string;
   onCopy?: () => void;
   onExport?: () => void;
+  panelSize?: number;
 }
 
 export default function DockerfilePreview({ 
   dockerfileText,
   onCopy,
-  onExport
+  onExport,
+  panelSize
 }: DockerfilePreviewProps) {
   const [wordWrap, setWordWrap] = useState<'on' | 'off'>('on');
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(dockerfileText).then(() => {
@@ -63,6 +67,36 @@ export default function DockerfilePreview({
   const lineCount = dockerfileText.split('\n').length;
   const charCount = dockerfileText.length;
 
+  // Trigger editor layout when panel size changes
+  useEffect(() => {
+    if (editorRef.current) {
+      // Small delay to ensure DOM has updated
+      const timer = setTimeout(() => {
+        editorRef.current?.layout();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [panelSize]);
+
+  // Use ResizeObserver for more reliable resize detection
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      // Use requestAnimationFrame to batch layout calls
+      requestAnimationFrame(() => {
+        editorRef.current?.layout();
+      });
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
   return (
     <div className="dockerfile-preview">
       {/* Header */}
@@ -84,7 +118,7 @@ export default function DockerfilePreview({
       </div>
 
       {/* Monaco Editor */}
-      <div className="preview-editor">
+      <div className="preview-editor" ref={containerRef}>
         <Editor
           height="100%"
           language="dockerfile"
@@ -96,6 +130,18 @@ export default function DockerfilePreview({
           }}
           onMount={(editor, monaco) => {
             console.log('Monaco editor mounted successfully');
+            editorRef.current = editor;
+            
+            // Handle window resize events
+            const handleResize = () => {
+              editor.layout();
+            };
+            window.addEventListener('resize', handleResize);
+            
+            // Cleanup function stored in editor's disposal
+            editor.onDidDispose(() => {
+              window.removeEventListener('resize', handleResize);
+            });
           }}
           loading={
             <div className="editor-loading">
