@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  max-width: 100%;
   background-color: var(--vscode-editor-background);
   border-left: 1px solid var(--vscode-panel-border);
   /* Keep preview panel fixed, prevent scrolling */
@@ -9,6 +10,7 @@
   position: relative;
   /* Prevent any child from causing scroll */
   contain: layout style;
+  box-sizing: border-box;
 }
 
 .preview-header {
@@ -19,6 +21,9 @@
   border-bottom: 1px solid var(--vscode-panel-border);
   background-color: var(--vscode-sideBar-background);
   flex-shrink: 0;
+  min-width: 0; /* Allow shrinking */
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .preview-title {
@@ -26,18 +31,36 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--vscode-foreground);
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .preview-actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .preview-editor {
   flex: 1;
   overflow: hidden;
   position: relative;
+  max-width: 100%;
+  width: 100%;
+  min-width: 0; /* Critical: allows flex item to shrink below content size */
+  box-sizing: border-box;
+}
+
+/* Force Monaco editor container to respect parent bounds */
+.preview-editor > section,
+.preview-editor .monaco-editor,
+.preview-editor .overflow-guard {
+  max-width: 100% !important;
+  width: 100% !important;
 }
 
 .editor-loading {

@@ -385,6 +385,7 @@ vscode-button.green-button:hover::part(control) {
 .split-view [data-panel] {
   overflow: hidden !important;
   position: relative;
+  min-width: 0; /* Critical: allows panel to shrink properly */
 }
 
 /* Panel scroll containers - wrap content and control scrolling */
@@ -392,6 +393,9 @@ vscode-button.green-button:hover::part(control) {
   height: 100%;
   width: 100%;
   position: relative;
+  min-width: 0; /* Critical: allows container to shrink */
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Left panel wrapper - scrollable */
@@ -409,11 +413,16 @@ vscode-button.green-button:hover::part(control) {
 /* Right panel wrapper - fixed, no scrolling */
 .preview-panel-wrapper {
   overflow: hidden !important;
+  max-width: 100%;
+  min-width: 0; /* Critical: allows flex item to shrink */
+  box-sizing: border-box;
 }
 
 /* Ensure preview content doesn't cause scrolling */
 .preview-panel-wrapper > * {
   overflow: hidden !important;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .resize-handle {

@@ -28,6 +28,7 @@ export default function DockerfileBuilder() {
   const stageCounterRef = useRef(0);
   const isInitialLoadRef = useRef(true);
   const isSavingRef = useRef(false);
+  const [previewPanelSize, setPreviewPanelSize] = useState(50);
 
   // Load Dockerfile data into state
   const loadDockerfileData = useCallback((data: DockerfileData) => {
@@ -513,12 +514,17 @@ export default function DockerfileBuilder() {
       />
 
       {/* Right Panel - Preview */}
-      <Panel defaultSize={50} minSize={30}>
+      <Panel 
+        defaultSize={50} 
+        minSize={30}
+        onResize={(size) => setPreviewPanelSize(size.asPercentage)}
+      >
         <div className="panel-scroll-container preview-panel-wrapper">
           <DockerfilePreview 
             dockerfileText={dockerfileText}
             onCopy={handleCopyDockerfile}
             onExport={handleExportDockerfile}
+            panelSize={previewPanelSize}
           />
         </div>
       </Panel>
