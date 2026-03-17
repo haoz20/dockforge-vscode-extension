@@ -3,7 +3,7 @@
   "publisher": "dockforge",
   "displayName": "DockForge",
   "description": "A powerful visual builder for Docker. Create, validate, and manage Dockerfiles and containers effortlessly through an intuitive graphical interface.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "icon": "assets/logo.png",
   "engines": {
     "vscode": "^1.75.0"
