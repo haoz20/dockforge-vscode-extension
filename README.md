@@ -1,163 +1,80 @@
-# DockForge
+<div align="center">
+  <img src="assets/logo.png" alt="DockForge Logo" width="128" height="128">
+  
+  # DockForge
+  
+  **A powerful, visual Dockerfile builder and management extension for Visual Studio Code.**
 
-A Visual Studio Code extension for building and managing Dockerfiles with a graphical interface.
+  [![GitHub stars](https://img.shields.io/github/stars/haoz20/dockforge-vscode-extension?style=flat-square)](https://github.com/haoz20/dockforge-vscode-extension/stargazers)
+  [![Views](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fhaoz20%2Fdockforge-vscode-extension&count_bg=%230066CC&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=views&edge_flat=true)](https://github.com/haoz20/dockforge-vscode-extension)
 
-## Installation
+</div>
 
-### From Source
+---
 
-1. Clone this repository:
+**DockForge** bridges the gap between writing complex Dockerfiles and managing local containers. It provides a rich graphical interface (GUI) directly inside VS Code to build, validate, manage, and push Docker images—all without needing to memorize Docker CLI syntax.
+
+## Key Features
+
+* **Visual Dockerfile Builder:** Create multi-stage Dockerfiles using a modern React-based drag-and-drop interface.
+* **Real-Time Validation & Linting:** Catch errors before you build. Get instant warnings for missing base images, misconfigured ports, and suggestions for best practices (e.g., merging `RUN` commands).
+* **Docker Hub Integration:** Log in, search repositories, fetch tags, and push images directly to Docker Hub from the sidebar.
+* **Local Image Management:** View, run, tag, and delete local Docker images through an intuitive Tree View.
+* **One-Click Build & Run:** Build your custom image and spin up a container with a single click.
+
+## Prerequisites
+
+Before using DockForge, ensure you have the following installed:
+* [Visual Studio Code](https://code.visualstudio.com/) (v1.75.0 or higher)
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) (must be running to build and run images)
+
+## Quick Start
+
+### 1. Creating a New Dockerfile
+1. Open the DockForge sidebar by clicking the **stack logo** in the VS Code Activity Bar.
+2. Click **"+ Create New Dockerfile"** in the *Build Dockerfiles* panel.
+3. Name your file and use the visual builder to add stages and commands (`FROM`, `RUN`, `COPY`, etc.).
+4. Click **"Insert to Workspace"** to save the generated `Dockerfile` to your project.
+
+### 2. Building & Running Images
+1. Open an existing Dockerfile in the DockForge Builder.
+2. In the "Build Image" section, configure your image name and tag.
+3. Click **"Build Image"** to compile.
+4. Navigate to the **"Docker Images"** tree view, right-click your new image, and select **"Run Container"**.
+
+## Extension Commands
+
+Access these commands via the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
+
+| Command | Description |
+| :--- | :--- |
+| `DockForge: Create New Dockerfile` | Create a new Dockerfile using the visual builder. |
+| `DockForge: Open Dockerfile Builder` | Open the visual builder for an existing Dockerfile. |
+| `DockForge: Refresh Dockerfiles` | Refresh the workspace Dockerfiles tree view. |
+| `DockForge: Docker Hub Login` | Authenticate securely with Docker Hub. |
+| `Push to Docker Hub` | Push a local image to your Docker Hub repository. |
+| `Run Container` | Spin up a container from a selected image. |
+| `Tag / Rename Image` | Add a new tag or rename a local Docker image. |
+
+## Validation Engine
+
+DockForge features a custom linting engine that evaluates your Dockerfiles against industry best practices:
+
+* **Warnings (Critical Issues):** Detects missing base images, empty commands, invalid port numbers in `EXPOSE`, multiple `CMD`/`ENTRYPOINT` instructions, and `COPY`/`ADD` calls before `WORKDIR`.
+* **Suggestions (Optimizations):** Recommends naming intermediate stages, merging sequential `RUN` commands to reduce layer count, and using `COPY` over `ADD`.
+
+## Development Setup
+
+Want to contribute or hack on DockForge locally? 
+
+### Project Architecture
+DockForge is split into two main environments:
+* `src/`: The VS Code Extension Host (TypeScript). Handles Docker CLI execution, file system operations, and tree views.
+* `webview-ui/`: The Frontend UI (React 18, Vite, Tailwind CSS). Handles the visual builder and Docker Hub dashboard.
+
+### Getting Started
+
+1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/dockforge-vscode-extension.git
+   git clone https://github.com/haoz20/dockforge-vscode-extension.git
    cd dockforge-vscode-extension
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm run install:all
-   ```
-
-3. Build the webview UI:
-   ```bash
-   npm run build:webview
-   ```
-
-4. Compile the extension:
-   ```bash
-   npm run compile
-   ```
-
-5. Open in VS Code and press `F5` to run the extension in development mode
-
-## Usage
-
-### Creating a New Dockerfile
-
-1. Open the DockForge sidebar by clicking the DockForge icon in the Activity Bar
-2. Click the **"+ Create New Dockerfile"** button
-3. Enter a name for your Dockerfile
-4. Use the visual builder to add stages and commands
-5. Click **"Insert to Workspace"** to save your Dockerfile
-
-### Opening Existing Dockerfiles
-
-- Click on any Dockerfile in the **"Build Dockerfiles"** tree view to open it in the builder
-- The builder will automatically parse and display the Dockerfile structure
-
-### Validation & Hints
-
-The extension provides real-time validation as you build:
-
-- **Warnings**: Critical issues that may prevent your Docker build from working
-- **Suggestions**: Best practices and optimization tips
-
-### Building Docker Images
-
-1. Create or open a Dockerfile in the builder
-2. Configure build settings (image name, tag, etc.)
-3. Click **"Build Image"** to build the Docker image
-4. Click **"Build & Run"** to build and run the container
-
-## Commands
-
-- **DockForge: Create New Dockerfile** - Create a new Dockerfile in the sidebar
-- **DockForge: Open Dockerfile Builder** - Open the Dockerfile builder panel
-- **DockForge: Refresh Dockerfiles** - Refresh the Dockerfile tree view
-- **DockForge: Delete Dockerfile** - Delete a Dockerfile from the tree view
-
-## Development
-
-### Project Structure
-
-```
-dockforge-vscode-extension/
-├── src/                          # Extension source code
-│   ├── extension.ts              # Extension entry point
-│   ├── panels/                   # Webview panel managers
-│   │   ├── DockForgePanel.ts     # Main Dockerfile builder panel
-│   │   └── DockerHubPanel.ts     # Docker Hub integration panel
-│   ├── DockerfileTreeDataProvider.ts  # Tree view data provider
-│   ├── DockerfileTreeItem.ts     # Tree view item model
-│   └── utilities/                # Utility functions
-└── webview-ui/                   # React frontend
-    ├── src/
-    │   ├── App.tsx               # Main app component
-    │   ├── DockerfileBuilder.tsx # Builder UI
-    │   ├── StageCard.tsx         # Stage editor component
-    │   ├── CommandDropdown.tsx   # Command type selector
-    │   ├── ValidationPanel.tsx   # Validation display
-    │   └── utilities/
-    │       ├── validations.ts    # Dockerfile validation logic
-    │       └── vscode.ts         # VS Code API wrapper
-    └── build/                    # Built webview assets
-```
-
-### Development Scripts
-
-```bash
-# Install all dependencies
-npm run install:all
-
-# Start webview development server
-npm run start:webview
-
-# Build webview for production
-npm run build:webview
-
-# Compile TypeScript extension code
-npm run compile
-
-# Watch for TypeScript changes
-npm run watch
-
-# Lint code
-npm run lint
-```
-
-### Building the Extension
-
-To create a `.vsix` package for distribution:
-
-```bash
-npm install -g @vscode/vsce
-npm run build:webview
-npm run compile
-vsce package
-```
-
-## Technology Stack
-
-- **Extension Host**: TypeScript + VS Code Extension API
-- **Webview UI**: React 18 + TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS 4
-- **Validation**: Custom Dockerfile linting engine
-
-## Validation Rules
-
-DockForge validates Dockerfiles against common best practices:
-
-### Warnings
-- Missing base image
-- Empty commands
-- Invalid port numbers in EXPOSE
-- Multiple CMD/ENTRYPOINT instructions
-- Deprecated MAINTAINER instruction
-- COPY/ADD before WORKDIR
-
-### Suggestions
-- Multi-stage build detection
-- Naming intermediate stages
-- Merging RUN commands to reduce layers
-- Using .dockerignore for large COPY contexts
-- Using COPY instead of ADD when appropriate
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request

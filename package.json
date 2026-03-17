@@ -2,7 +2,7 @@
   "name": "dockforge",
   "publisher": "dockforge",
   "displayName": "DockForge",
-  "description": "A VS Code extension for Docker and DevContainer management with React + Vite and the Webview UI Toolkit.",
+  "description": "A powerful visual builder for Docker. Create, validate, and manage Dockerfiles and containers effortlessly through an intuitive graphical interface.",
   "version": "1.0.1",
   "icon": "assets/logo.png",
   "engines": {
