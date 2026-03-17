@@ -6,7 +6,6 @@
   **A powerful, visual Dockerfile builder and management extension for Visual Studio Code.**
 
   [![GitHub stars](https://img.shields.io/github/stars/haoz20/dockforge-vscode-extension?style=flat-square)](https://github.com/haoz20/dockforge-vscode-extension/stargazers)
-  [![Views](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fhaoz20%2Fdockforge-vscode-extension&count_bg=%230066CC&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=views&edge_flat=true)](https://github.com/haoz20/dockforge-vscode-extension)
 
 </div>
 
